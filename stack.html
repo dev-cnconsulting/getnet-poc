@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stack & Infra — POC Pagamentos</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="layout">
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open');document.querySelector('.sidebar-overlay').classList.toggle('show')">&#9776;</button>
+<div class="sidebar-overlay" onclick="document.querySelector('.sidebar').classList.remove('open');this.classList.remove('show')"></div>
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <h1>💳 POC Pagamentos</h1>
+        <div class="sub">Guia de Integração Multi-Gateway</div>
+    </div>
+    <nav>
+        <div class="nav-section">
+            <div class="nav-label">Visão Geral</div>
+            <a href="index.html" class="nav-link" data-page="index"><span class="icon">🏠</span> Início</a>
+            <a href="comparativo.html" class="nav-link" data-page="comparativo"><span class="icon">⚖️</span> Comparativo</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-label">Arquitetura</div>
+            <a href="stack.html" class="nav-link" data-page="stack"><span class="icon">🏗️</span> Stack & Infra</a>
+            <a href="banco.html" class="nav-link" data-page="banco"><span class="icon">🗄️</span> Banco de Dados</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-label">Integradores</div>
+            <a href="getnet.html" class="nav-link" data-page="getnet"><span class="icon">🔴</span> Getnet</a>
+            <a href="mercado-pago.html" class="nav-link" data-page="mercado-pago"><span class="icon">🔵</span> Mercado Pago</a>
+            <a href="pagarme.html" class="nav-link" data-page="pagarme"><span class="icon">🟢</span> Pagar.me</a>
+        </div>
+    </nav>
+</aside>
+<div class="main">
+<div class="content page-stack">
+<div class="hero">
+    <h1>🏗️ Stack & Infraestrutura</h1>
+    <p class="sub">Arquitetura recomendada para processar pagamentos: Serverless vs Provisionado</p>
+</div>
+
+<h2>Visão Geral da Arquitetura</h2>
+<p>O sistema de pagamentos precisa de um backend que comunique com as APIs dos integradores (Getnet, Mercado Pago, Pagar.me), processe webhooks, garanta idempotência e armazene transações com segurança. A seguir, comparamos três abordagens de infraestrutura.</p>
+
+<div class="flow">
+    <div class="flow-step fs1"><div class="num">1</div><div class="label">Frontend<br><small>Next.js / React</small></div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step fs2"><div class="num">2</div><div class="label">API Backend<br><small>Serverless ou Docker</small></div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step fs3"><div class="num">3</div><div class="label">Gateway<br><small>Getnet / MP / Pagar.me</small></div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step fs4"><div class="num">4</div><div class="label">Webhook<br><small>Confirmação de status</small></div></div>
+</div>
+
+<h2>Opção A: Serverless (Vercel Functions / Cloudflare Workers)</h2>
+
+<div class="card-grid">
+    <div class="card"><div class="card-icon">⚡</div><h4>Vercel Functions</h4><p>Integração nativa com Next.js · Deploy automático · Cold start ~50ms · Boa para CRUD + API calls</p></div>
+    <div class="card"><div class="card-icon">🌐</div><h4>Cloudflare Workers</h4><p>Edge computing global · Cold start ~0ms · V8 isolates · Ideal para webhooks e proxies</p></div>
+    <div class="card"><div class="card-icon">λ</div><h4>AWS Lambda</h4><p>Mais flexível · Maior cold start · Integração com SQS, SNS, DynamoDB · Para escala massiva</p></div>
+</div>
+
+<h3>Quando usar Serverless?</h3>
+<table>
+    <thead><tr><th>Critério</th><th>Serverless</th></tr></thead>
+    <tbody>
+        <tr><td><strong>Volume</strong></td><td>Low to medium (até ~10k transações/mês)</td></tr>
+        <tr><td><strong>Latência</strong></td><td>Importante — edge computing reduz latency para webhooks</td></tr>
+        <tr><td><strong>Equipe</strong></td><td>Pequena — sem DevOps dedicado</td></tr>
+        <tr><td><strong>Custo</strong></td><td>Pay-per-use — ideal para início (quase zero com baixo volume)</td></tr>
+        <tr><td><strong>Manutenção</strong></td><td>Mínima — auto-scaling, auto-healing, sem patching de OS</td></tr>
+        <tr><td><strong>Limitações</strong></td><td>Cold start, timeout (10-30s), sem estado persistente entre requests, conexões DB efêmeras</td></tr>
+    </tbody>
+</table>
+
+<h3>Arquitetura Serverless Recomendada</h3>
+<div class="stack-box"><div class="layer-label">FRONTEND</div>Next.js 16 (Vercel) — Checkout UI + React Server Components</div>
+<div class="stack-arrow">↓ HTTPS</div>
+<div class="stack-box"><div class="layer-label">API — VERCEL FUNCTIONS</div>Route Handlers (Next.js) ou Edge Functions — Validação + Gateway Abstraction Layer</div>
+<div class="stack-arrow">↓ HTTPS</div>
+<div class="stack-box"><div class="layer-label">GATEWAY PROVIDERS</div>Getnet API · Mercado Pago API · Pagar.me API</div>
+<div class="stack-arrow">↑ WEBHOOK</div>
+<div class="stack-box"><div class="layer-label">WEBHOOK RECEIVER — CLOUDFLARE WORKER</div>Recebe callbacks → valida → escreve no DB → atualiza status da transação</div>
+<div class="stack-arrow">↓ SQL</div>
+<div class="stack-box"><div class="layer-label">DATABASE — SUPABASE (PostgreSQL)</div>Tabelas: transactions, customers, webhooks, idempotency_keys</div>
+
+<div class="callout callout-success">
+    <span class="callout-title">✅ Recomendação Serverless</span>
+    <strong>Para início de operações</strong>: Next.js Route Handlers na Vercel (API) + Supabase (PostgreSQL) + Cloudflare Worker para webhooks. Deploy automático, custo quase zero, escala automática. <strong>Migração fácil</strong> para Docker se volume crescer.
+</div>
+
+<h2>Opção B: Provisionado (Docker / VPS / ECS)</h2>
+
+<div class="card-grid">
+    <div class="card"><div class="card-icon">🐳</div><h4>Docker + VPS</h4><p>Hetzner/DigitalOcean + Docker Compose · Mais barato em escala · Controle total</p></div>
+    <div class="card"><div class="card-icon">☁️</div><h4>AWS ECS/Fargate</h4><p>Container gerenciado · Auto-scaling · Integração com RDS, SQS · Para escala massiva</p></div>
+    <div class="card"><div class="card-icon">🚂</div><h4>Railway / Fly.io</h4><p>PaaS moderno · Deploy from Git · Bom meio-termo entre serverless e provisionado</p></div>
+</div>
+
+<h3>Quando usar Provisionado?</h3>
+<table>
+    <thead><tr><th>Critério</th><th>Provisionado (Docker)</th></tr></thead>
+    <tbody>
+        <tr><td><strong>Volume</strong></td><td>Medium to high (>10k transações/mês, processamento contínuo)</td></tr>
+        <tr><td><strong>Latência</strong></td><td>Consistente — sem cold start</td></tr>
+        <tr><td><strong>Equipe</strong></td><td>Tem DevOps ou pessoa que pode assumir infra</td></tr>
+        <tr><td><strong>Custo</strong></td><td>Fixo mensal — mais barato que serverless em alto volume</td></tr>
+        <tr><td><strong>Manutenção</strong></td><td>Maior — patching, monitoring, scaling manual</td></tr>
+        <tr><td><strong>Vantagens</strong></td><td>Conexões DB persistentes, background jobs, filas, timeouts longos, estado entre requests</td></tr>
+    </tbody>
+</table>
+
+<h3>Arquitetura Docker Recomendada</h3>
+<div class="stack-box"><div class="layer-label">FRONTEND</div>Next.js 16 (Vercel ou mesmo servidor Docker)</div>
+<div class="stack-arrow">↓ HTTPS</div>
+<div class="stack-box"><div class="layer-label">API — NODE.JS / BUN (Docker)</div>Express ou Hono.js — Gateway Abstraction Layer + Fila de processamento</div>
+<div class="stack-arrow">↓</div>
+<div class="stack-box"><div class="layer-label">FILA — REDIS / BULLMQ</div>Processamento assíncrono de webhooks, retry de transações, conciliação</div>
+<div class="stack-arrow">↓</div>
+<div class="stack-box"><div class="layer-label">DATABASE — POSTGRESQL (Docker ou RDS)</div>Pool de conexões persistente + migrações com Drizzle/Prisma</div>
+<div class="stack-arrow">↓</div>
+<div class="stack-box"><div class="layer-label">GATEWAY PROVIDERS</div>Getnet · Mercado Pago · Pagar.me (com retry e circuit breaker)</div>
+
+<h2>Comparação Direta: Serverless vs Provisionado</h2>
+<table>
+    <thead><tr><th>Critério</th><th>Serverless (Vercel/CF Workers)</th><th>Provisionado (Docker/VPS)</th></tr></thead>
+    <tbody>
+        <tr><td><strong>Custo inicial</strong></td><td>≈ R$ 0 (free tier)</td><td>~R$ 50-100/mês (VPS + DB)</td></tr>
+        <tr><td><strong>Custo em escala</strong></td><td>Cresce por request</td><td>Fixo (melhor em alto volume)</td></tr>
+        <tr><td><strong>Cold start</strong></td><td>50-500ms (Vercel) / ~0ms (CF Workers)</td><td>Nenhum</td></tr>
+        <tr><td><strong>Timeout</strong></td><td>10-30s (limite)</td><td>Configurável (sem limite prático)</td></tr>
+        <tr><td><strong>Conexão DB</strong></td><td>Efêmera (supabase.js / HTTP)</td><td>Pool persistente (pg / prisma)</td></tr>
+        <tr><td><strong>Background jobs</strong></td><td>Não suportado nativamente</td><td>✅ Sim (BullMQ, cron, etc.)</td></tr>
+        <tr><td><strong>Webhooks</strong></td><td>✅ Ideal (edge, global)</td><td>✅ Sim (mas single-region)</td></tr>
+        <tr><td><strong>Filas/Retry</strong></td><td>Limitado (SQS externo)</td><td>✅ Redis/BullMQ nativo</td></tr>
+        <tr><td><strong>Manutenção</strong></td><td>Mínima</td><td>Média (OS, Docker, monitoring)</td></tr>
+        <tr><td><strong>Deploy</strong></td><td>Git push → auto deploy</td><td>CI/CD pipeline (Docker build + push)</td></tr>
+        <tr><td><strong>Stack recomendada</strong></td><td>Next.js + Supabase + CF Worker</td><td>Node.js/Bun + PostgreSQL + Redis</td></tr>
+    </tbody>
+</table>
+
+<h2>Nossa Recomendação para Início de Operações</h2>
+
+<div class="callout callout-success">
+    <span class="callout-title">✅ Cenário Recomendado — Híbrido Serverless</span>
+    <ol>
+        <li><strong>Frontend + API</strong>: <code>Next.js 16</code> na <strong>Vercel</strong> (Route Handlers para API)</li>
+        <li><strong>Database</strong>: <strong>Supabase</strong> (PostgreSQL gerenciado, pooler, auth, realtime)</li>
+        <li><strong>Webhooks</strong>: <strong>Cloudflare Worker</strong> (edge global, 0ms cold start, recebe e valida callbacks de todos os 3 integradores)</li>
+        <li><strong>ORM</strong>: <strong>Drizzle ORM</strong> (type-safe, lightweight, migrações)</li>
+        <li><strong>Cartões</strong>: Tokenização no frontend via SDK do integrador (nunca toca PAN no backend)</li>
+        <li><strong>Secrets</strong>: Vercel Environment Variables + Supabase Vault</li>
+    </ol>
+    <strong>Por que?</strong> Custo quase zero no início, deploy automático, escala automática. Quando volume crescer (>10k/mês), migra API para Docker mantendo Supabase — a arquitetura de Gateway Abstraction permite trocar de serverless para provisionado sem reescrever lógica de negócio.
+</div>
+
+<h2>Gateway Abstraction Layer — Padrão de Design</h2>
+<p>Para suportar múltiplos integradores sem acoplamento, usamos um <strong>Adapter Pattern</strong>:</p>
+
+<pre><code><span class="tok-comment">// lib/payments/types.ts</span>
+interface PaymentProvider {
+  name: string;
+  createCharge(params: ChargeParams): Promise&lt;ChargeResult&gt;;
+  getPixQRCode(params: PixParams): Promise&lt;PixResult&gt;;
+  getTransaction(id: string): Promise&lt;TransactionStatus&gt;;
+  refund(id: string, amount?: number): Promise&lt;RefundResult&gt;;
+  parseWebhook(body: any, headers: any): WebhookEvent;
+}
+
+<span class="tok-comment">// lib/payments/mercadopago.ts</span>
+class MercadoPagoProvider implements PaymentProvider {
+  name = <span class="tok-str">'mercado-pago'</span>;
+  async createCharge(params) { <span class="tok-comment">/* MP Orders API */</span> }
+  async getPixQRCode(params) { <span class="tok-comment">/* MP Pix API */</span> }
+  async parseWebhook(body, headers) { <span class="tok-comment">/* MP webhook format */</span> }
+}
+
+<span class="tok-comment">// lib/payments/getnet.ts</span>
+class GetnetProvider implements PaymentProvider {
+  name = <span class="tok-str">'getnet'</span>;
+  async createCharge(params) { <span class="tok-comment">/* Getnet Global API */</span> }
+  async getPixQRCode(params) { <span class="tok-comment">/* Getnet Pix endpoint */</span> }
+  async parseWebhook(body, headers) { <span class="tok-comment">/* Getnet callback format */</span> }
+}
+
+<span class="tok-comment">// lib/payments/factory.ts</span>
+function getProvider(name: string): PaymentProvider {
+  switch(name) {
+    case <span class="tok-str">'mercado-pago'</span>: return new MercadoPagoProvider();
+    case <span class="tok-str">'getnet'</span>: return new GetnetProvider();
+    case <span class="tok-str">'pagarme'</span>: return new PagarmeProvider();
+  }
+}
+
+<span class="tok-comment">// app/api/charge/route.ts (Vercel Route Handler)</span>
+export async function POST(req: Request) {
+  const { provider, ...params } = await req.json();
+  const gateway = getProvider(provider);
+  const result = await gateway.createCharge(params);
+  <span class="tok-comment">// salvar no DB, retornar resultado</span>
+}</code></pre>
+
+<div class="callout callout-info">
+    <span class="callout-title">💡 Vantagem do Adapter Pattern</span>
+    Permite <strong>trocar de integrador</strong> sem reescrever a lógica de negócio. Adicionar um novo gateway = criar uma nova classe que implementa <code>PaymentProvider</code>. O resto do sistema (DB, frontend, webhooks) não muda.
+</div>
+
+<h2>Segurança & PCI DSS</h2>
+<table>
+    <thead><tr><th>Prática</th><th>Descrição</th></tr></thead>
+    <tbody>
+        <tr><td><strong>Tokenização de cartão</strong></td><td>Usar SDK do integrador no frontend — PAN nunca chega ao nosso backend. Reduz escopo PCI para SAQ-A</td></tr>
+        <tr><td><strong>Secrets management</strong></td><td>Vercel env vars + Supabase Vault. Nunca commitar chaves no Git. Rotacionar periodicamente</td></tr>
+        <tr><td><strong>Idempotency keys</strong></td><td>UUID por transação — previne dupla cobrança em retry</td></tr>
+        <tr><td><strong>Webhook signature</strong></td><td>Validar assinatura/header do webhook (cada integrador tem método próprio) antes de processar</td></tr>
+        <tr><td><strong>HTTPS everywhere</strong></td><td>TLS 1.2+ obrigatório. Vercel e Cloudflare provêm SSL automaticamente</td></tr>
+        <tr><td><strong>Rate limiting</strong></td><td>Proteger endpoints de API contra abuso (Vercel Edge Middleware ou Upstash Ratelimit)</td></tr>
+        <tr><td><strong>Audit log</strong></td><td>Registrar todas as chamadas de API e webhooks para troubleshooting e compliance</td></tr>
+        <tr><td><strong>CVV nunca armazenado</strong></td><td>O security_code é enviado ao gateway e descartado — nunca persistido</td></tr>
+    </tbody>
+</table>
+
+<div class="footer">POC Pagamentos — CN Consulting · <a href="index.html">← Início</a> · <a href="banco.html">Banco de Dados →</a></div>
+</div>
+</div>
+</div>
+<script>
+(function(){
+  var path = window.location.pathname.split('/').pop() || 'index.html';
+  document.querySelectorAll('.nav-link').forEach(function(link){
+    var page = link.getAttribute('data-page');
+    if(path === page + '.html' || (path === '' && page === 'index')){
+      link.classList.add('active');
+    }
+  });
+})();
+</script>
+</body>
+</html>

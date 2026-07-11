@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pagar.me — POC Pagamentos</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="layout">
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open');document.querySelector('.sidebar-overlay').classList.toggle('show')">&#9776;</button>
+<div class="sidebar-overlay" onclick="document.querySelector('.sidebar').classList.remove('open');this.classList.remove('show')"></div>
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <h1>💳 POC Pagamentos</h1>
+        <div class="sub">Guia de Integração Multi-Gateway</div>
+    </div>
+    <nav>
+        <div class="nav-section">
+            <div class="nav-label">Visão Geral</div>
+            <a href="index.html" class="nav-link" data-page="index"><span class="icon">🏠</span> Início</a>
+            <a href="comparativo.html" class="nav-link" data-page="comparativo"><span class="icon">⚖️</span> Comparativo</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-label">Arquitetura</div>
+            <a href="stack.html" class="nav-link" data-page="stack"><span class="icon">🏗️</span> Stack & Infra</a>
+            <a href="banco.html" class="nav-link" data-page="banco"><span class="icon">🗄️</span> Banco de Dados</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-label">Integradores</div>
+            <a href="getnet.html" class="nav-link" data-page="getnet"><span class="icon">🔴</span> Getnet</a>
+            <a href="mercado-pago.html" class="nav-link" data-page="mercado-pago"><span class="icon">🔵</span> Mercado Pago</a>
+            <a href="pagarme.html" class="nav-link" data-page="pagarme"><span class="icon">🟢</span> Pagar.me</a>
+        </div>
+    </nav>
+</aside>
+<div class="main">
+<div class="content page-pagarme">
+<div class="hero">
+    <h1>🟢 Integração Pagar.me</h1>
+    <p class="sub">API v5 REST — Cartão de Crédito, Pix QR Code e Checkout Hosted</p>
+    <div class="badges">
+        <span class="badge">🔧 API Mais Robusta</span>
+        <span class="badge">💳 Cartão</span>
+        <span class="badge">⚡ Pix</span>
+        <span class="badge">🔀 Split Nativo</span>
+        <span class="badge">🔄 Retentativa</span>
+    </div>
+</div>
+
+<h2>Visão Geral</h2>
+<p>O <strong>Pagar.me</strong> (Grupo Stone) é o <strong>PSP (Payment Service Provider) mais robusto do Brasil</strong> para desenvolvedores. API REST seguindo os melhores padrões, SDKs em 5+ linguagens, checkout hosted ou transparente, split de pagamento nativo e retentativa automática de vendas recusadas.</p>
+
+<div class="callout callout-success">
+    <span class="callout-title">✅ Principais Vantagens</span>
+    <ul>
+        <li><strong>API REST de primeira</strong> — docs.pagar.me excelentes com llms.txt para IA</li>
+        <li><strong>Split de pagamento nativo</strong> — marketplace-ready, split com N recebedores</li>
+        <li><strong>Retentativa transparente</strong> — salva 5-10% de vendas recusadas automaticamente</li>
+        <li>Pix completo (QR Code + estorno + split via Pix)</li>
+        <li>Checkout hosted (redirect) ou transparente (API direta)</li>
+        <li>SDKs em JS, PHP, Python, Ruby, Go</li>
+        <li>Cobrança pontual (order) e recorrente (subscription)</li>
+    </ul>
+</div>
+
+<table>
+    <thead><tr><th>Ambiente</th><th>Base URL</th><th>Credencial</th></tr></thead>
+    <tbody>
+        <tr><td>Teste (Sandbox)</td><td><code>https://sdx-api.pagar.me/core/v5</code></td><td><code>sk_test_...</code></td></tr>
+        <tr><td>Produção</td><td><code>https://api.pagar.me/core/v5</code></td><td><code>sk_live_...</code></td></tr>
+    </tbody>
+</table>
+
+<h2>1. Credenciais & Autenticação</h2>
+<p>O Pagar.me usa <strong>HTTP Basic Auth</strong> com a <code>secret_key</code> como único campo (password vazio):</p>
+<pre><code><span class="tok-comment">// Header obrigatório em TODAS as requisições</span>
+Authorization: Basic {BASE64("sk_test_xxx:")}
+User-Agent: pagarme-skill-generated/1.0
+
+<span class="tok-comment">// Exemplo curl</span>
+curl --request POST https://sdx-api.pagar.me/core/v5/orders \
+  --header <span class="tok-str">'Content-Type: application/json'</span> \
+  --header <span class="tok-str">'Authorization: Basic c2tfdGVzdF9hYmN4ZGVmOg=='</span> \
+  --header <span class="tok-str">'User-Agent: pagarme-skill-generated/1.0'</span></code></pre>
+
+<h2>2. Pagamento por Cartão de Crédito</h2>
+<p>O Pagar.me permite criar um pedido (<code>order</code>) com cartão de crédito. O fluxo padrão é: tokenizar cartão → criar order → processar.</p>
+
+<div class="endpoint"><span class="method m-post">POST</span><span class="url">/orders</span></div>
+
+<h4>Requisição</h4>
+<pre><code>curl --request POST \
+  --url https://sdx-api.pagar.me/core/v5/orders \
+  --header <span class="tok-str">'Content-Type: application/json'</span> \
+  --header <span class="tok-str">'Authorization: Basic {base64(sk_test:)}'</span> \
+  --header <span class="tok-str">'User-Agent: pagarme-skill-generated/1.0'</span> \
+  --data '{
+  <span class="tok-key">"code"</span>: <span class="tok-str">"ORDER-001"</span>,
+  <span class="tok-key">"amount"</span>: <span class="tok-num">10000</span>,
+  <span class="tok-key">"currency"</span>: <span class="tok-str">"BRL"</span>,
+  <span class="tok-key">"customer"</span>: {
+    <span class="tok-key">"name"</span>: <span class="tok-str">"João Silva"</span>,
+    <span class="tok-key">"email"</span>: <span class="tok-str">"joao@example.com"</span>,
+    <span class="tok-key">"document_type"</span>: <span class="tok-str">"CPF"</span>,
+    <span class="tok-key">"document"</span>: <span class="tok-str">"12345678900"</span>,
+    <span class="tok-key">"type"</span>: <span class="tok-str">"individual"</span>,
+    <span class="tok-key">"address"</span>: {
+      <span class="tok-key">"country"</span>: <span class="tok-str">"BR"</span>,
+      <span class="tok-key">"state"</span>: <span class="tok-str">"SP"</span>,
+      <span class="tok-key">"city"</span>: <span class="tok-str">"São Paulo"</span>,
+      <span class="tok-key">"line_1"</span>: <span class="tok-str">"Av. Paulista, 1000"</span>,
+      <span class="tok-key">"zip_code"</span>: <span class="tok-str">"01310100"</span>
+    }
+  },
+  <span class="tok-key">"payments"</span>: [
+    {
+      <span class="tok-key">"payment_method"</span>: <span class="tok-str">"credit_card"</span>,
+      <span class="tok-key">"credit_card"</span>: {
+        <span class="tok-key">"number"</span>: <span class="tok-str">"5155901222260000"</span>,
+        <span class="tok-key">"exp_month"</span>: <span class="tok-num">12</span>,
+        <span class="tok-key">"exp_year"</span>: <span class="tok-num">2030</span>,
+        <span class="tok-key">"cvv"</span>: <span class="tok-str">"123"</span>,
+        <span class="tok-key">"holder_name"</span>: <span class="tok-str">"JOAO SILVA"</span>,
+        <span class="tok-key">"brand"</span>: <span class="tok-str">"Mastercard"</span>,
+        <span class="tok-key">"installments"</span>: <span class="tok-num">1</span>
+      }
+    }
+  ]
+}'</code></pre>
+
+<h4>Resposta (201 Created)</h4>
+<pre><code>{
+  <span class="tok-key">"id"</span>: <span class="tok-str">"or_XXXXXXXXXXXXXXXX"</span>,
+  <span class="tok-key">"code"</span>: <span class="tok-str">"ORDER-001"</span>,
+  <span class="tok-key">"amount"</span>: <span class="tok-num">10000</span>,
+  <span class="tok-key">"currency"</span>: <span class="tok-str">"BRL"</span>,
+  <span class="tok-key">"status"</span>: <span class="tok-str">"paid"</span>,
+  <span class="tok-key">"closed"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"charges"</span>: [{
+    <span class="tok-key">"id"</span>: <span class="tok-str">"ch_XXXXXXXX"</span>,
+    <span class="tok-key">"status"</span>: <span class="tok-str">"paid"</span>,
+    <span class="tok-key">"amount"</span>: <span class="tok-num">10000</span>,
+    <span class="tok-key">"last_transaction"</span>: {
+      <span class="tok-key">"status"</span>: <span class="tok-str">"captured"</span>,
+      <span class="tok-key">"brand"</span>: <span class="tok-str">"Mastercard"</span>,
+      <span class="tok-key">"last_four"</span>: <span class="tok-str">"0000"</span>,
+      <span class="tok-key">"acquirer_response_code"</span>: <span class="tok-str">"00"</span>
+    }
+  }]
+}</code></pre>
+
+<div class="callout callout-info">
+    <span class="callout-title">💡 Tokenização via Checkout</span>
+    Para não lidar com dados de cartão no backend, use o <strong>Checkout Pagar.me</strong> via <code>POST /paymentlinks</code> — cria uma URL de checkout hosted. O cliente paga na página do Pagar.me e o webhook confirma.
+</div>
+
+<h2>3. Pagamento via Pix QR Code</h2>
+<p>O Pagar.me suporta Pix como meio de pagamento em pedidos. Crie um <code>order</code> com <code>payment_method: "pix"</code> e receba o QR Code:</p>
+
+<div class="endpoint"><span class="method m-post">POST</span><span class="url">/orders</span></div>
+
+<h4>Requisição</h4>
+<pre><code>curl --request POST \
+  --url https://sdx-api.pagar.me/core/v5/orders \
+  --header <span class="tok-str">'Content-Type: application/json'</span> \
+  --header <span class="tok-str">'Authorization: Basic {base64(sk_test:)}'</span> \
+  --data '{
+  <span class="tok-key">"code"</span>: <span class="tok-str">"ORDER-PIX-001"</span>,
+  <span class="tok-key">"amount"</span>: <span class="tok-num">10050</span>,
+  <span class="tok-key">"currency"</span>: <span class="tok-str">"BRL"</span>,
+  <span class="tok-key">"customer"</span>: {
+    <span class="tok-key">"name"</span>: <span class="tok-str">"João Silva"</span>,
+    <span class="tok-key">"email"</span>: <span class="tok-str">"joao@example.com"</span>,
+    <span class="tok-key">"document"</span>: <span class="tok-str">"12345678900"</span>,
+    <span class="tok-key">"document_type"</span>: <span class="tok-str">"CPF"</span>,
+    <span class="tok-key">"type"</span>: <span class="tok-str">"individual"</span>
+  },
+  <span class="tok-key">"payments"</span>: [
+    {
+      <span class="tok-key">"payment_method"</span>: <span class="tok-str">"pix"</span>,
+      <span class="tok-key">"pix"</span>: {
+        <span class="tok-key">"expires_in"</span>: <span class="tok-num">1800</span>
+      }
+    }
+  ]
+}'</code></pre>
+
+<h4>Resposta (201 Created)</h4>
+<pre><code>{
+  <span class="tok-key">"id"</span>: <span class="tok-str">"or_YYYYYYYYYYYY"</span>,
+  <span class="tok-key">"code"</span>: <span class="tok-str">"ORDER-PIX-001"</span>,
+  <span class="tok-key">"status"</span>: <span class="tok-str">"pending"</span>,
+  <span class="tok-key">"charges"</span>: [{
+    <span class="tok-key">"id"</span>: <span class="tok-str">"ch_YYYYYYYY"</span>,
+    <span class="tok-key">"status"</span>: <span class="tok-str">"pending"</span>,
+    <span class="tok-key">"last_transaction"</span>: {
+      <span class="tok-key">"status"</span>: <span class="tok-str">"with_qr_code"</span>,
+      <span class="tok-key">"qr_code"</span>: <span class="tok-str">"00020126580014br.gov.bcb.pix..."</span>,
+      <span class="tok-key">"qr_code_url"</span>: <span class="tok-str">"data:image/png;base64,..."</span>,
+      <span class="tok-key">"expires_at"</span>: <span class="tok-str">"2025-10-20T19:25:55Z"</span>
+    }
+  }]
+}</code></pre>
+<div class="callout callout-info">
+    <span class="callout-title">💡 Pix via Pagar.me</span>
+    <code>qr_code</code> = string "copia e cola" · <code>qr_code_url</code> = imagem base64 do QR Code. Pix é assíncrono — receba confirmação via webhook. Pix no Pagar.me também suporta <strong>estorno</strong> (até 90 dias) e <strong>split</strong>.
+</div>
+
+<h2>4. Checkout Hosted (Link de Pagamento)</h2>
+<p>Para evitar lidar com dados de cartão, crie um link de checkout:</p>
+<div class="endpoint"><span class="method m-post">POST</span><span class="url">/paymentlinks</span></div>
+<pre><code>curl --request POST \
+  --url https://sdx-api.pagar.me/core/v5/paymentlinks \
+  --header <span class="tok-str">'Content-Type: application/json'</span> \
+  --header <span class="tok-str">'Authorization: Basic {base64(sk_test:)}'</span> \
+  --data '{
+  <span class="tok-key">"type"</span>: <span class="tok-str">"order"</span>,
+  <span class="tok-key">"amount"</span>: <span class="tok-num">10000</span>,
+  <span class="tok-key">"currency"</span>: <span class="tok-str">"BRL"</span>,
+  <span class="tok-key">"enabled_payment_methods"</span>: [<span class="tok-str">"credit_card"</span>, <span class="tok-str">"pix"</span>, <span class="tok-str">"boleto"</span>]
+}'
+<span class="tok-comment">// → { "url": "https://checkout.pagar.me/..." }</span></code></pre>
+
+<h2>5. Split de Pagamento</h2>
+<p>O Pagar.me tem o <strong>melhor split do mercado</strong> — nativo, suporta N recebedores com regras complexas:</p>
+<pre><code>{
+  <span class="tok-key">"payments"</span>: [{
+    <span class="tok-key">"payment_method"</span>: <span class="tok-str">"credit_card"</span>,
+    <span class="tok-key">"credit_card"</span>: { <span class="tok-comment">/* dados do cartão */</span> },
+    <span class="tok-key">"split"</span>: [
+      { <span class="tok-key">"recipient_id"</span>: <span class="tok-str">"re_xxx1"</span>, <span class="tok-key">"amount"</span>: <span class="tok-num">7000</span>, <span class="tok-key">"type"</span>: <span class="tok-str">"flat"</span> },
+      { <span class="tok-key">"recipient_id"</span>: <span class="tok-str">"re_xxx2"</span>, <span class="tok-key">"amount"</span>: <span class="tok-num">3000</span>, <span class="tok-key">"type"</span>: <span class="tok-str">"flat"</span> }
+    ]
+  }]
+}</code></pre>
+
+<h2>6. Webhooks — Notificações</h2>
+<p>Configure a URL de webhook no painel do Pagar.me ou via API. O Pagar.me envia HTTP POST com o evento:</p>
+
+<h4>Configurar via API</h4>
+<pre><code>curl --request POST \
+  --url https://sdx-api.pagar.me/core/v5/webhooks \
+  --header <span class="tok-str">'Authorization: Basic {base64(sk_test:)}'</span> \
+  --data '{ <span class="tok-key">"url"</span>: <span class="tok-str">"https://seu-backend.com/api/webhook/pagarme"</span> }'</code></pre>
+
+<h4>Exemplo de Webhook Recebido</h4>
+<pre><code>{
+  <span class="tok-key">"id"</span>: <span class="tok-str">"evt_xxxxxxxx"</span>,
+  <span class="tok-key">"type"</span>: <span class="tok-str">"order.paid"</span>,
+  <span class="tok-key">"data"</span>: {
+    <span class="tok-key">"id"</span>: <span class="tok-str">"or_xxxxxxxx"</span>,
+    <span class="tok-key">"code"</span>: <span class="tok-str">"ORDER-001"</span>,
+    <span class="tok-key">"status"</span>: <span class="tok-str">"paid"</span>,
+    <span class="tok-key">"amount"</span>: <span class="tok-num">10000</span>
+  }
+}</code></pre>
+
+<h4>Eventos principais</h4>
+<table>
+    <thead><tr><th>Evento</th><th>Descrição</th></tr></thead>
+    <tbody>
+        <tr><td><code>order.created</code></td><td>Pedido criado</td></tr>
+        <tr><td><code>order.paid</code></td><td>Pedido pago</td></tr>
+        <tr><td><code>order.canceled</code></td><td>Pedido cancelado</td></tr>
+        <tr><td><code>charge.paid</code></td><td>Cobrança paga</td></tr>
+        <tr><td><code>charge.refunded</code></td><td>Cobrança estornada</td></tr>
+    </tbody>
+</table>
+
+<h2>7. Status de Pedido</h2>
+<table>
+    <thead><tr><th>Status</th><th>Descrição</th></tr></thead>
+    <tbody>
+        <tr><td><span class="status status-pending">pending</span></td><td>Aguardando pagamento</td></tr>
+        <tr><td><span class="status status-approved">paid</span></td><td>Pago</td></tr>
+        <tr><td><span class="status status-denied">canceled</span></td><td>Cancelado</td></tr>
+        <tr><td><span class="status status-error">failed</span></td><td>Falhou</td></tr>
+        <tr><td><span class="status status-waiting">with_qr_code</span></td><td>QR Code gerado (Pix)</td></tr>
+    </tbody>
+</table>
+
+<h2>8. SDKs Oficiais</h2>
+<table>
+    <thead><tr><th>Linguagem</th><th>Pacote</th></tr></thead>
+    <tbody>
+        <tr><td>JavaScript/TypeScript</td><td><code>@pagarme/browser</code> (frontend) · <code>pagarme</code> (backend)</td></tr>
+        <tr><td>PHP</td><td><code>pagarme/pagarme-php-sdk</code></td></tr>
+        <tr><td>Python</td><td><code>pagarme-python</code></td></tr>
+        <tr><td>Ruby</td><td><code>pagarme-ruby</code></td></tr>
+        <tr><td>Go</td><td><code>pagarme-go</code></td></tr>
+    </tbody>
+</table>
+
+<h2>9. Taxas</h2>
+<table>
+    <thead><tr><th>Modalidade</th><th>Taxa de Balcão</th><th>Prazo</th></tr></thead>
+    <tbody>
+        <tr><td>Pix</td><td>1,19%</td><td>D+0 (instantâneo)</td></tr>
+        <tr><td>Boleto</td><td>R$ 3,49 por boleto pago</td><td>D+15</td></tr>
+        <tr><td>Débito</td><td>~1,99%</td><td>D+2</td></tr>
+        <tr><td>Crédito 1x</td><td>~3,87%</td><td>D+30</td></tr>
+        <tr><td>Crédito 12x</td><td>~16% (negociável para volume)</td><td>Parcelado</td></tr>
+        <tr><td>Taxa fixa por transação</td><td>R$ 0,99</td><td>—</td></tr>
+        <tr><td>Taxa por saque</td><td>R$ 3,67</td><td>—</td></tr>
+    </tbody>
+</table>
+<div class="callout callout-warn">
+    <span class="callout-title">⚠️ Negociação de Taxas</span>
+    As taxas de balcão do Pagar.me são altas para parcelamento, mas <strong>extremamente negociáveis</strong> para volumes > R$50k/mês. Entre em contato comercial para obter taxas personalizadas (pode chegar a ~11,99% no 12x).
+</div>
+
+<h2>10. Aspecto Comercial</h2>
+<p>Para contratação: criar conta no <a href="https://dashboard.pagar.me" target="_blank">dashboard.pagar.me</a>, completar KYC, obter <code>sk_test_...</code> e <code>sk_live_...</code>. Sem mensalidade. Recebimento: D+0 para Pix, D+2 a D+30 para cartão. Saque para banco externo custa R$3,67. Domicílio em qualquer banco. Para detalhes completos, veja <a href="comparativo.html">Comparativo</a>.</p>
+
+<div class="callout callout-info">
+    <span class="callout-title">📋 Documentação Oficial</span>
+    <a href="https://docs.pagar.me/" target="_blank">docs.pagar.me</a> · <a href="https://docs.pagar.me/reference/introdu%C3%A7%C3%A3o-1" target="_blank">API Reference</a> · <a href="https://docs.pagar.me/docs/llms" target="_blank">LLMs.txt</a> (para IA)
+</div>
+
+<div class="footer">POC Pagamentos — CN Consulting · <a href="mercado-pago.html">← Mercado Pago</a> · <a href="index.html">Início →</a></div>
+</div>
+</div>
+</div>
+<script>
+(function(){
+  var path = window.location.pathname.split('/').pop() || 'index.html';
+  document.querySelectorAll('.nav-link').forEach(function(link){
+    var page = link.getAttribute('data-page');
+    if(path === page + '.html' || (path === '' && page === 'index')){
+      link.classList.add('active');
+    }
+  });
+})();
+</script>
+</body>
+</html>

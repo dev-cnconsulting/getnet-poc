@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Banco de Dados — POC Pagamentos</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="layout">
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open');document.querySelector('.sidebar-overlay').classList.toggle('show')">&#9776;</button>
+<div class="sidebar-overlay" onclick="document.querySelector('.sidebar').classList.remove('open');this.classList.remove('show')"></div>
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <h1>💳 POC Pagamentos</h1>
+        <div class="sub">Guia de Integração Multi-Gateway</div>
+    </div>
+    <nav>
+        <div class="nav-section">
+            <div class="nav-label">Visão Geral</div>
+            <a href="index.html" class="nav-link" data-page="index"><span class="icon">🏠</span> Início</a>
+            <a href="comparativo.html" class="nav-link" data-page="comparativo"><span class="icon">⚖️</span> Comparativo</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-label">Arquitetura</div>
+            <a href="stack.html" class="nav-link" data-page="stack"><span class="icon">🏗️</span> Stack & Infra</a>
+            <a href="banco.html" class="nav-link" data-page="banco"><span class="icon">🗄️</span> Banco de Dados</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-label">Integradores</div>
+            <a href="getnet.html" class="nav-link" data-page="getnet"><span class="icon">🔴</span> Getnet</a>
+            <a href="mercado-pago.html" class="nav-link" data-page="mercado-pago"><span class="icon">🔵</span> Mercado Pago</a>
+            <a href="pagarme.html" class="nav-link" data-page="pagarme"><span class="icon">🟢</span> Pagar.me</a>
+        </div>
+    </nav>
+</aside>
+<div class="main">
+<div class="content page-banco">
+<div class="hero">
+    <h1>🗄️ Banco de Dados</h1>
+    <p class="sub">Schema e modelo de dados para processar pagamentos multi-gateway</p>
+</div>
+
+<h2>Visão Geral</h2>
+<p>O schema de banco de dados é <strong>agnóstico ao integrador</strong> — não importa se a transação foi processada via Getnet, Mercado Pago ou Pagar.me, a estrutura é a mesma. Campos específicos do integrador ficam em colunas JSON/JSONB ou tabelas auxiliares.</p>
+
+<div class="callout callout-info">
+    <span class="callout-title">📋 Stack de DB</span>
+    <strong>PostgreSQL</strong> (Supabase ou RDS) · <strong>Drizzle ORM</strong> para migrations e type-safety · Tipos nativos UUID, JSONB, TIMESTAMP WITH TIME ZONE
+</div>
+
+<h2>Diagrama Entidade-Relacionamento</h2>
+<pre><code>┌─────────────┐     ┌──────────────────┐     ┌───────────────────┐
+│  customers  │────→│  transactions     │────→│  webhook_events    │
+└─────────────┘     └──────────────────┘     └───────────────────┘
+                          │   │   │
+            ┌─────────────┘   │   └──────────────┐
+            ↓                 ↓                  ↓
+┌──────────────────┐ ┌────────────────┐ ┌──────────────────┐
+│  refunds         │ │  card_tokens   │ │  idempotency_keys │
+└──────────────────┘ └────────────────┘ └──────────────────┘
+                          │
+                          ↓
+                   ┌────────────────┐
+                   │  split_payments │
+                   └────────────────┘</code></pre>
+
+<h2>Tabelas Principais — Schema SQL</h2>
+
+<h3>1. customers — Clientes/Compradores</h3>
+<pre><code>CREATE TABLE customers (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email         TEXT NOT NULL,
+    first_name    VARCHAR(100),
+    last_name     VARCHAR(100),
+    document_type VARCHAR(10),        <span class="tok-comment">-- CPF, CNPJ</span>
+    document_number VARCHAR(20),      <span class="tok-comment">-- sem pontuação</span>
+    phone_number  VARCHAR(20),
+    created_at    TIMESTAMPTZ DEFAULT now(),
+    updated_at    TIMESTAMPTZ DEFAULT now(),
+
+    UNIQUE(email)
+);
+
+CREATE INDEX idx_customers_doc ON customers(document_type, document_number);</code></pre>
+
+<h3>2. transactions — Transações (Pagamentos)</h3>
+<pre><code>CREATE TABLE transactions (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    customer_id     UUID REFERENCES customers(id),
+
+    <span class="tok-comment">-- Identificação do pedido</span>
+    order_id        VARCHAR(100) NOT NULL,     <span class="tok-comment">-- ID do pedido no nosso sistema</span>
+    idempotency_key VARCHAR(64) NOT NULL UNIQUE, <span class="tok-comment">-- previne dupla cobrança</span>
+
+    <span class="tok-comment">-- Gateway/Integrador</span>
+    provider        VARCHAR(20) NOT NULL,     <span class="tok-comment">-- 'getnet', 'mercado-pago', 'pagarme'</span>
+    provider_payment_id  VARCHAR(255),        <span class="tok-comment">-- ID retornado pelo gateway</span>
+    provider_transaction_id VARCHAR(255),    <span class="tok-comment">-- transaction_id do gateway</span>
+
+    <span class="tok-comment">-- Dados do pagamento</span>
+    amount          INTEGER NOT NULL,          <span class="tok-comment">-- valor em CENTAVOS (R$ 100,00 = 10000)</span>
+    currency        VARCHAR(3) DEFAULT 'BRL',
+    payment_method  VARCHAR(20) NOT NULL,     <span class="tok-comment">-- 'credit_card', 'debit_card', 'pix', 'boleto'</span>
+    installments    INTEGER DEFAULT 1,
+    transaction_type VARCHAR(20) DEFAULT 'FULL', <span class="tok-comment">-- FULL, INSTALL_NO_INTEREST, etc.</span>
+
+    <span class="tok-comment">-- Status</span>
+    status          VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    <span class="tok-comment">-- PENDING, AUTHORIZED, APPROVED, DENIED, CANCELED, ERROR, WAITING, REFUNDED</span>
+    status_detail   TEXT,                     <span class="tok-comment">-- mensagem de erro/reason_message</span>
+    reason_code     VARCHAR(10),              <span class="tok-comment">-- código de reason (ex: '00')</span>
+
+    <span class="tok-comment">-- Cartão (quando aplicável)</span>
+    card_brand      VARCHAR(20),             <span class="tok-comment">-- VISA, MASTERCARD, ELO, AMEX, HIPER</span>
+    card_last4      CHAR(4),                  <span class="tok-comment">-- últimos 4 dígitos</span>
+    card_token_id   UUID,                     <span class="tok-comment">-- FK para card_tokens (se tokenizado)</span>
+    authorization_code VARCHAR(20),
+
+    <span class="tok-comment">-- Pix (quando aplicável)</span>
+    pix_qr_code     TEXT,                     <span class="tok-comment">-- string "copia e cola"</span>
+    pix_expires_at  TIMESTAMPTZ,
+    pix_paid_at     TIMESTAMPTZ,
+
+    <span class="tok-comment">-- Metadata</span>
+    soft_descriptor VARCHAR(50),
+    provider_response JSONB,                  <span class="tok-comment">-- resposta completa do gateway</span>
+    provider_request  JSONB,                  <span class="tok-comment">-- request enviado (sem PAN/CVV)</span>
+    metadata       JSONB DEFAULT '{}',       <span class="tok-comment">-- dados adicionais custom</span>
+
+    <span class="tok-comment">-- Antifraude</span>
+    device_ip       INET,
+    device_id       UUID,
+    finger_print    VARCHAR(255),
+
+    <span class="tok-comment">-- Timestamps</span>
+    created_at      TIMESTAMPTZ DEFAULT now(),
+    updated_at      TIMESTAMPTZ DEFAULT now(),
+    authorized_at   TIMESTAMPTZ,
+    received_at     TIMESTAMPTZ,
+
+    UNIQUE(order_id, provider)
+);
+
+CREATE INDEX idx_txn_status ON transactions(status);
+CREATE INDEX idx_txn_provider ON transactions(provider);
+CREATE INDEX idx_txn_order ON transactions(order_id);
+CREATE INDEX idx_txn_customer ON transactions(customer_id);
+CREATE INDEX idx_txn_created ON transactions(created_at DESC);
+CREATE INDEX idx_txn_provider_pid ON transactions(provider_payment_id);</code></pre>
+
+<h3>3. card_tokens — Cartões Tokenizados (Cofre)</h3>
+<pre><code>CREATE TABLE card_tokens (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    customer_id     UUID REFERENCES customers(id),
+    provider        VARCHAR(20) NOT NULL,    <span class="tok-comment">-- em qual gateway foi tokenizado</span>
+    provider_token  VARCHAR(255) NOT NULL,   <span class="tok-comment">-- token retornado pelo gateway</span>
+
+    card_brand      VARCHAR(20) NOT NULL,
+    card_last4      CHAR(4) NOT NULL,
+    expiration_month VARCHAR(2) NOT NULL,
+    expiration_year VARCHAR(4) NOT NULL,
+    cardholder_name VARCHAR(100),
+
+    is_active       BOOLEAN DEFAULT true,
+    created_at      TIMESTAMPTZ DEFAULT now(),
+    updated_at      TIMESTAMPTZ DEFAULT now(),
+
+    UNIQUE(provider, provider_token)
+);
+
+CREATE INDEX idx_card_tokens_customer ON card_tokens(customer_id);</code></pre>
+
+<h3>4. webhook_events — Log de Webhooks Recebidos</h3>
+<pre><code>CREATE TABLE webhook_events (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    transaction_id  UUID REFERENCES transactions(id),
+
+    provider        VARCHAR(20) NOT NULL,    <span class="tok-comment">-- 'getnet', 'mercado-pago', 'pagarme'</span>
+    event_type      VARCHAR(50),            <span class="tok-comment">-- 'payment.approved', 'payment.denied', etc.</span>
+    provider_event_id VARCHAR(255),         <span class="tok-comment">-- ID do evento no gateway</span>
+
+    <span class="tok-comment">-- Dados do webhook</span>
+    raw_body        JSONB NOT NULL,         <span class="tok-comment">-- payload completo recebido</span>
+    raw_headers     JSONB,                  <span class="tok-comment">-- headers (para validação de assinatura)</span>
+    query_params    JSONB,                  <span class="tok-comment">-- para Getnet que usa HTTP GET</span>
+
+    <span class="tok-comment">-- Status do processamento</span>
+    processed       BOOLEAN DEFAULT false,
+    processed_at    TIMESTAMPTZ,
+    processing_error TEXT,
+    retry_count     INTEGER DEFAULT 0,
+
+    received_at     TIMESTAMPTZ DEFAULT now(),
+
+    UNIQUE(provider, provider_event_id)
+);
+
+CREATE INDEX idx_webhook_txn ON webhook_events(transaction_id);
+CREATE INDEX idx_webhook_unprocessed ON webhook_events(processed) WHERE processed = false;</code></pre>
+
+<h3>5. refunds — Estornos/Cancelamentos</h3>
+<pre><code>CREATE TABLE refunds (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    transaction_id  UUID REFERENCES transactions(id),
+
+    provider        VARCHAR(20) NOT NULL,
+    provider_refund_id VARCHAR(255),
+
+    amount          INTEGER NOT NULL,       <span class="tok-comment">-- valor do estorno em centavos</span>
+    status          VARCHAR(20) DEFAULT 'PENDING', <span class="tok-comment">-- PENDING, APPROVED, DENIED, ERROR</span>
+    reason          TEXT,
+
+    idempotency_key VARCHAR(64) NOT NULL UNIQUE,
+
+    provider_response JSONB,
+    created_at      TIMESTAMPTZ DEFAULT now(),
+    processed_at    TIMESTAMPTZ
+);
+
+CREATE INDEX idx_refund_txn ON refunds(transaction_id);</code></pre>
+
+<h3>6. split_payments — Divisão de Valores (Split)</h3>
+<pre><code>CREATE TABLE split_payments (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    transaction_id  UUID REFERENCES transactions(id),
+
+    receiver_id     VARCHAR(255) NOT NULL,  <span class="tok-comment">-- ID do sub-vendedor no gateway</span>
+    receiver_name   VARCHAR(200),
+
+    amount          INTEGER NOT NULL,        <span class="tok-comment">-- valor em centavos</span>
+    percentage      DECIMAL(5,2),           <span class="tok-comment">-- ou percentual</span>
+    fee_type        VARCHAR(20),            <span class="tok-comment">-- 'PERCENTAGE' ou 'FIXED'</span>
+
+    status          VARCHAR(20) DEFAULT 'PENDING',
+
+    created_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX idx_split_txn ON split_payments(transaction_id);</code></pre>
+
+<h3>7. idempotency_keys — Controle de Idempotência</h3>
+<pre><code>CREATE TABLE idempotency_keys (
+    key             VARCHAR(64) PRIMARY KEY,
+    endpoint        VARCHAR(100) NOT NULL,   <span class="tok-comment">-- qual endpoint usou esta chave</span>
+    request_body    JSONB,                   <span class="tok-comment">-- body enviado (hash para comparação)</span>
+    response_body   JSONB,                   <span class="tok-comment">-- resposta do gateway</span>
+    status_code     INTEGER,
+    created_at      TIMESTAMPTZ DEFAULT now(),
+    expires_at      TIMESTAMPTZ DEFAULT now() + INTERVAL '24 hours'
+);
+
+CREATE INDEX idx_idempotency_expires ON idempotency_keys(expires_at);</code></pre>
+
+<h2>Fluxo de Dados — Cartão de Crédito</h2>
+<pre><code>1. Frontend → Tokeniza cartão via SDK do gateway → recebe card_token
+2. Frontend → POST /api/charge { provider, card_token, amount, customer }
+3. Backend  → INSERT INTO transactions (status='PENDING', idempotency_key)
+4. Backend  → Chama API do gateway → recebe payment_id + status
+5. Backend  → UPDATE transactions SET status='APPROVED', provider_payment_id
+6. Gateway  → Webhook → POST /api/webhook/{provider}
+7. Backend  → INSERT INTO webhook_events → UPDATE transactions (status final)</code></pre>
+
+<h2>Fluxo de Dados — Pix</h2>
+<pre><code>1. Frontend → POST /api/pix { provider, amount, customer }
+2. Backend  → INSERT INTO transactions (status='WAITING', idempotency_key)
+3. Backend  → Chama API do gateway → recebe qr_code + payment_id
+4. Backend  → UPDATE transactions SET pix_qr_code, pix_expires_at
+5. Frontend → Exibe QR Code para o cliente
+6. Cliente  → Paga via app do banco
+7. Gateway  → Webhook → POST /api/webhook/{provider}
+8. Backend  → INSERT INTO webhook_events
+9. Backend  → UPDATE transactions SET status='APPROVED', pix_paid_at</code></pre>
+
+<h2>Triggers Úteis</h2>
+<pre><code><span class="tok-comment">-- Auto-update updated_at em todas as tabelas</span>
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER txn_updated_at BEFORE UPDATE ON transactions
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER customer_updated_at BEFORE UPDATE ON customers
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+<span class="tok-comment">-- Log de mudança de status</span>
+CREATE TABLE transaction_status_log (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    transaction_id  UUID REFERENCES transactions(id),
+    old_status      VARCHAR(20),
+    new_status      VARCHAR(20),
+    changed_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE OR REPLACE FUNCTION log_status_change()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.status IS DISTINCT FROM OLD.status THEN
+        INSERT INTO transaction_status_log (transaction_id, old_status, new_status)
+        VALUES (NEW.id, OLD.status, NEW.status);
+    END IF;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER txn_status_log BEFORE UPDATE ON transactions
+    FOR EACH ROW EXECUTE FUNCTION log_status_change();</code></pre>
+
+<h2>Índices Críticos para Performance</h2>
+<table>
+    <thead><tr><th>Índice</th><th>Propósito</th></tr></thead>
+    <tbody>
+        <tr><td><code>idx_txn_status</code></td><td>Filtrar transações por status (dashboard, conciliação)</td></tr>
+        <tr><td><code>idx_txn_provider</code></td><td>Relatórios por integrador</td></tr>
+        <tr><td><code>idx_txn_order</code></td><td>Buscar transação por order_id (checkout)</td></tr>
+        <tr><td><code>idx_txn_created DESC</code></td><td>Listagem paginada por data (dashboard)</td></tr>
+        <tr><td><code>idx_txn_provider_pid</code></td><td>Buscar por payment_id do gateway (webhook matching)</td></tr>
+        <tr><td><code>idx_webhook_unprocessed</code></td><td>Fila de webhooks pendentes (partial index)</td></tr>
+        <tr><td><code>idx_customers_doc</code></td><td>Buscar cliente por CPF/CNPJ</td></tr>
+    </tbody>
+</table>
+
+<h2>Retenção e Particionamento</h2>
+<div class="callout callout-warn">
+    <span class="callout-title">⚠️ Estratégia de Retenção</span>
+    <ul>
+        <li><strong>transactions</strong>: Retenção indefinida (registro fiscal/contábil)</li>
+        <li><strong>webhook_events</strong>: Retenção 90 dias (para troubleshooting). Após isso, arquivar</li>
+        <li><strong>idempotency_keys</strong>: Expiram em 24h (cleanup automático via job)</li>
+        <li><strong>transaction_status_log</strong>: Retenção 12 meses</li>
+        <li>Para volumes altos, particionar <code>transactions</code> por mês (<code>PARTITION BY RANGE (created_at)</code>)</li>
+    </ul>
+</div>
+
+<h2>Drizzle ORM — Schema (TypeScript)</h2>
+<pre><code><span class="tok-comment">// drizzle/schema.ts</span>
+import { pgTable, uuid, varchar, integer, boolean, jsonb, timestamp, text, char, inet, decimal } from 'drizzle-orm/pg-core';
+
+export const customers = pgTable('customers', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  email: varchar('email', { length: 255 }).notNull(),
+  first_name: varchar('first_name', { length: 100 }),
+  last_name: varchar('last_name', { length: 100 }),
+  document_type: varchar('document_type', { length: 10 }),
+  document_number: varchar('document_number', { length: 20 }),
+  phone_number: varchar('phone_number', { length: 20 }),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+export const transactions = pgTable('transactions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  customer_id: uuid('customer_id').references(() => customers.id),
+  order_id: varchar('order_id', { length: 100 }).notNull(),
+  idempotency_key: varchar('idempotency_key', { length: 64 }).notNull().unique(),
+  provider: varchar('provider', { length: 20 }).notNull(),
+  provider_payment_id: varchar('provider_payment_id', { length: 255 }),
+  amount: integer('amount').notNull(),
+  currency: varchar('currency', { length: 3 }).default('BRL'),
+  payment_method: varchar('payment_method', { length: 20 }).notNull(),
+  installments: integer('installments').default(1),
+  status: varchar('status', { length: 20 }).notNull().default('PENDING'),
+  provider_response: jsonb('provider_response'),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  <span class="tok-comment">// ... campos omitidos para brevidade</span>
+});</code></pre>
+
+<div class="footer">POC Pagamentos — CN Consulting · <a href="stack.html">← Stack & Infra</a> · <a href="getnet.html">Getnet →</a></div>
+</div>
+</div>
+</div>
+<script>
+(function(){
+  var path = window.location.pathname.split('/').pop() || 'index.html';
+  document.querySelectorAll('.nav-link').forEach(function(link){
+    var page = link.getAttribute('data-page');
+    if(path === page + '.html' || (path === '' && page === 'index')){
+      link.classList.add('active');
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Getnet — POC Pagamentos</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="layout">
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open');document.querySelector('.sidebar-overlay').classList.toggle('show')">&#9776;</button>
+<div class="sidebar-overlay" onclick="document.querySelector('.sidebar').classList.remove('open');this.classList.remove('show')"></div>
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <h1>💳 POC Pagamentos</h1>
+        <div class="sub">Guia de Integração Multi-Gateway</div>
+    </div>
+    <nav>
+        <div class="nav-section">
+            <div class="nav-label">Visão Geral</div>
+            <a href="index.html" class="nav-link" data-page="index"><span class="icon">🏠</span> Início</a>
+            <a href="comparativo.html" class="nav-link" data-page="comparativo"><span class="icon">⚖️</span> Comparativo</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-label">Arquitetura</div>
+            <a href="stack.html" class="nav-link" data-page="stack"><span class="icon">🏗️</span> Stack & Infra</a>
+            <a href="banco.html" class="nav-link" data-page="banco"><span class="icon">🗄️</span> Banco de Dados</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-label">Integradores</div>
+            <a href="getnet.html" class="nav-link" data-page="getnet"><span class="icon">🔴</span> Getnet</a>
+            <a href="mercado-pago.html" class="nav-link" data-page="mercado-pago"><span class="icon">🔵</span> Mercado Pago</a>
+            <a href="pagarme.html" class="nav-link" data-page="pagarme"><span class="icon">🟢</span> Pagar.me</a>
+        </div>
+    </nav>
+</aside>
+<div class="main">
+<div class="content page-getnet">
+<div class="hero">
+    <h1>🔴 Integração Getnet</h1>
+    <p class="sub">Global API — Cartão de Crédito e Pix QR Code via OAuth 2.0</p>
+    <div class="badges">
+        <span class="badge">🔐 OAuth 2.0</span>
+        <span class="badge">💳 Cartão</span>
+        <span class="badge">⚡ Pix</span>
+        <span class="badge">🛡️ 3DS + Antifraude</span>
+        <span class="badge">🏦 Santander</span>
+    </div>
+</div>
+
+<h2>Visão Geral</h2>
+<p>A <strong>Getnet</strong> (Grupo Santander) oferece a <strong>Global API</strong> — uma REST API unificada para pagamentos online e presenciais. No Brasil suporta cartão (crédito/débito), Pix QR Code, boleto, recorrência, split, cofre (tokenização), antifraude e 3D Secure — todos inclusos sem custo adicional.</p>
+
+<table>
+    <thead><tr><th>Ambiente</th><th>Base URL</th></tr></thead>
+    <tbody>
+        <tr><td>Sandbox</td><td><code>https://api-sbx.globalgetnet.com</code></td></tr>
+        <tr><td>Pré-Produção</td><td><code>https://api.pre.globalgetnet.com</code></td></tr>
+        <tr><td>Produção</td><td><code>https://api.globalgetnet.com</code></td></tr>
+    </tbody>
+</table>
+
+<h2>1. Credenciais</h2>
+<table>
+    <thead><tr><th>Credencial</th><th>Onde obter</th></tr></thead>
+    <tbody>
+        <tr><td><code>client_id</code></td><td>Developer Dashboard → API Keys</td></tr>
+        <tr><td><code>client_secret</code></td><td>Developer Dashboard → Generate Secret ID</td></tr>
+        <tr><td><code>seller_id</code></td><td>Portal Minha Conta → Meus Serviços</td></tr>
+        <tr><td><code>x-transaction-channel-entry</code></td><td>Solicitado à Getnet</td></tr>
+    </tbody>
+</table>
+
+<h2>2. Autenticação (OAuth 2.0)</h2>
+<div class="endpoint"><span class="method m-post">POST</span><span class="url">/authentication/oauth2/access_token</span></div>
+<pre><code>curl --request POST \
+  --url https://api-sbx.globalgetnet.com/authentication/oauth2/access_token \
+  --header <span class="tok-str">'authorization: Basic {BASE64(client_id:client_secret)}'</span> \
+  --header <span class="tok-str">'content-type: application/x-www-form-urlencoded'</span> \
+  --data <span class="tok-str">'grant_type=client_credentials'</span></code></pre>
+<pre><code><span class="tok-comment">// Resposta</span>
+{
+  <span class="tok-key">"access_token"</span>: <span class="tok-str">"eyJ0eXAi..."</span>,
+  <span class="tok-key">"token_type"</span>: <span class="tok-str">"Bearer"</span>,
+  <span class="tok-key">"expires_in"</span>: <span class="tok-num">3599</span>
+}</code></pre>
+
+<h2>3. Pagamento por Cartão de Crédito (Single-Step)</h2>
+<div class="endpoint"><span class="method m-post">POST</span><span class="url">/dpm/payments-gwproxy/v2/payments</span></div>
+
+<h4>Requisição</h4>
+<pre><code>curl --request POST \
+  --url https://api-sbx.globalgetnet.com/dpm/payments-gwproxy/v2/payments \
+  --header <span class="tok-str">'authorization: Bearer {access_token}'</span> \
+  --header <span class="tok-str">'content-type: application/json'</span> \
+  --header <span class="tok-str">'x-seller-id: {seller_id}'</span> \
+  --header <span class="tok-str">'x-transaction-channel-entry: XX'</span> \
+  --data '{
+  <span class="tok-key">"idempotency_key"</span>: <span class="tok-str">"63c7f8ee-51a6-470d-bb76-ef762b62bfb9"</span>,
+  <span class="tok-key">"order_id"</span>: <span class="tok-str">"ORDER-10187383"</span>,
+  <span class="tok-key">"data"</span>: {
+    <span class="tok-key">"amount"</span>: <span class="tok-num">118708</span>,
+    <span class="tok-key">"currency"</span>: <span class="tok-str">"BRL"</span>,
+    <span class="tok-key">"customer"</span>: {
+      <span class="tok-key">"first_name"</span>: <span class="tok-str">"João"</span>,
+      <span class="tok-key">"last_name"</span>: <span class="tok-str">"Silva"</span>,
+      <span class="tok-key">"email"</span>: <span class="tok-str">"joao@example.com"</span>,
+      <span class="tok-key">"document_type"</span>: <span class="tok-str">"CPF"</span>,
+      <span class="tok-key">"document_number"</span>: <span class="tok-str">"12345678900"</span>,
+      <span class="tok-key">"phone_number"</span>: <span class="tok-str">"+5511999999999"</span>,
+      <span class="tok-key">"billing_address"</span>: {
+        <span class="tok-key">"street"</span>: <span class="tok-str">"Av. Paulista"</span>, <span class="tok-key">"number"</span>: <span class="tok-str">"1000"</span>,
+        <span class="tok-key">"district"</span>: <span class="tok-str">"Bela Vista"</span>, <span class="tok-key">"city"</span>: <span class="tok-str">"São Paulo"</span>,
+        <span class="tok-key">"state"</span>: <span class="tok-str">"SP"</span>, <span class="tok-key">"country"</span>: <span class="tok-str">"BR"</span>,
+        <span class="tok-key">"postal_code"</span>: <span class="tok-str">"01310-100"</span>
+      }
+    },
+    <span class="tok-key">"payment"</span>: {
+      <span class="tok-key">"payment_method"</span>: <span class="tok-str">"CREDIT"</span>,
+      <span class="tok-key">"transaction_type"</span>: <span class="tok-str">"FULL"</span>,
+      <span class="tok-key">"number_installments"</span>: <span class="tok-num">1</span>,
+      <span class="tok-key">"card"</span>: {
+        <span class="tok-key">"number"</span>: <span class="tok-str">"5155901222260000"</span>,
+        <span class="tok-key">"expiration_month"</span>: <span class="tok-str">"12"</span>,
+        <span class="tok-key">"expiration_year"</span>: <span class="tok-str">"30"</span>,
+        <span class="tok-key">"cardholder_name"</span>: <span class="tok-str">"JOAO SILVA"</span>,
+        <span class="tok-key">"security_code"</span>: <span class="tok-str">"123"</span>
+      }
+    },
+    <span class="tok-key">"additional_data"</span>: {
+      <span class="tok-key">"device"</span>: { <span class="tok-key">"ip_address"</span>: <span class="tok-str">"192.168.1.1"</span> }
+    }
+  }
+}'</code></pre>
+
+<h4>Resposta (200 OK)</h4>
+<pre><code>{
+  <span class="tok-key">"payment_id"</span>: <span class="tok-str">"053de7f9-3725-437b-bdfc-bbf3ed0acb75"</span>,
+  <span class="tok-key">"order_id"</span>: <span class="tok-str">"ORDER-10187383"</span>,
+  <span class="tok-key">"amount"</span>: <span class="tok-num">118708</span>,
+  <span class="tok-key">"status"</span>: <span class="tok-str">"APPROVED"</span>,
+  <span class="tok-key">"brand"</span>: <span class="tok-str">"MASTERCARD"</span>,
+  <span class="tok-key">"authorization_code"</span>: <span class="tok-str">"204050"</span>,
+  <span class="tok-key">"reason_message"</span>: <span class="tok-str">"captured"</span>
+}</code></pre>
+
+<h2>4. Pagamento via Pix QR Code</h2>
+<div class="endpoint"><span class="method m-post">POST</span><span class="url">/dpm/payments-gwproxy/v2/payments/qrcode/pix</span></div>
+
+<div class="callout callout-warn">
+    <span class="callout-title">⚠️ Pix é Assíncrono</span>
+    A API gera o QR Code e retorna <code>status: "WAITING"</code>. A confirmação chega via <strong>webhook</strong>.
+</div>
+
+<h4>Requisição</h4>
+<pre><code>curl --request POST \
+  --url https://api-sbx.globalgetnet.com/dpm/payments-gwproxy/v2/payments/qrcode/pix \
+  --header <span class="tok-str">'authorization: Bearer {access_token}'</span> \
+  --header <span class="tok-str">'content-type: application/json'</span> \
+  --header <span class="tok-str">'x-qrcode-expiration-time: 180'</span> \
+  --data '{
+  <span class="tok-key">"amount"</span>: <span class="tok-num">10050</span>,
+  <span class="tok-key">"currency"</span>: <span class="tok-str">"BRL"</span>,
+  <span class="tok-key">"customer_id"</span>: <span class="tok-str">"customer_21081826"</span>,
+  <span class="tok-key">"order_id"</span>: <span class="tok-str">"Order-00123"</span>,
+  <span class="tok-key">"idempotency_key"</span>: <span class="tok-str">"1eb2412c-165a-41cd-b1d9-76c575d30a21"</span>
+}'</code></pre>
+
+<h4>Resposta (201 Created)</h4>
+<pre><code>{
+  <span class="tok-key">"payment_id"</span>: <span class="tok-str">"03ec0ede-3bc9-42dd-a71b-1c3a670b2b89"</span>,
+  <span class="tok-key">"status"</span>: <span class="tok-str">"WAITING"</span>,
+  <span class="tok-key">"description"</span>: <span class="tok-str">"QR Code successfully generated and awaiting payment."</span>,
+  <span class="tok-key">"additional_data"</span>: {
+    <span class="tok-key">"qr_code"</span>: <span class="tok-str">"00020101021226740014br.bcb.pix..."</span>,
+    <span class="tok-key">"creation_date_qrcode"</span>: <span class="tok-str">"2025-10-20T18:55:55"</span>,
+    <span class="tok-key">"expiration_date_qrcode"</span>: <span class="tok-str">"2025-10-20T18:58:58"</span>,
+    <span class="tok-key">"psp_code"</span>: <span class="tok-str">"033"</span>
+  }
+}</code></pre>
+
+<h2>5. Webhooks — Notificações</h2>
+<p>Getnet usa dois modelos: <strong>Callbacks HTTP GET</strong> (4 URLs configuradas na acreditação) e <strong>Webhooks HTTP POST</strong> (configuráveis via API).</p>
+
+<h4>Parâmetros PIX (Callback GET)</h4>
+<table>
+    <thead><tr><th>Parâmetro</th><th>Descrição</th></tr></thead>
+    <tbody>
+        <tr><td><code>payment_type</code></td><td><code>pix</code></td></tr>
+        <tr><td><code>payment_id</code></td><td>UUID da transação</td></tr>
+        <tr><td><code>status</code></td><td><span class="status status-approved">APPROVED</span> <span class="status status-denied">DENIED</span> <span class="status status-error">ERROR</span></td></tr>
+        <tr><td><code>transaction_id</code></td><td>ID no PSP</td></tr>
+        <tr><td><code>payer_name</code></td><td>Nome do pagador (se aprovado)</td></tr>
+        <tr><td><code>payer_cpf</code></td><td>CPF do pagador</td></tr>
+    </tbody>
+</table>
+
+<div class="callout callout-warn">
+    <span class="callout-title">⚠️ Retry Policy</span>
+    Em caso de erro, Getnet reenvia a cada <strong>15 minutos</strong>, até <strong>4 tentativas</strong>.
+</div>
+
+<h2>6. Cancelamento</h2>
+<div class="endpoint"><span class="method m-post">POST</span><span class="url">/dpm/payments-gwproxy/v2/payments/cancel</span></div>
+<pre><code>{
+  <span class="tok-key">"idempotency_key"</span>: <span class="tok-str">"new-uuid"</span>,
+  <span class="tok-key">"payment_id"</span>: <span class="tok-str">"053de7f9-3725-437b-bdfc-bbf3ed0acb75"</span>,
+  <span class="tok-key">"amount"</span>: <span class="tok-num">118708</span>
+}</code></pre>
+
+<h2>7. Tokenização (Cofre)</h2>
+<div class="endpoint"><span class="method m-post">POST</span><span class="url">/dpm/cofre-gw-proxy/v1/tokens/card</span></div>
+<pre><code>{ <span class="tok-key">"card_number"</span>: <span class="tok-str">"5155901222260000"</span>, <span class="tok-key">"customer_id"</span>: <span class="tok-str">"customer_001"</span> }
+<span class="tok-comment">// → { "number_token": "d1c81e4e-..." }</span></code></pre>
+
+<h2>8. Cartões de Teste</h2>
+<table>
+    <thead><tr><th>Bandeira</th><th>Número</th><th>CVV</th></tr></thead>
+    <tbody>
+        <tr><td>Mastercard</td><td><code>5155901222260000</code></td><td>123</td></tr>
+        <tr><td>Visa</td><td><code>4012001037141112</code></td><td>123</td></tr>
+        <tr><td>Amex</td><td><code>376449043333005</code></td><td>1234</td></tr>
+        <tr><td>Elo</td><td><code>6362970000457013</code></td><td>123</td></tr>
+    </tbody>
+</table>
+
+<h2>9. Taxas</h2>
+<table>
+    <thead><tr><th>Modalidade</th><th>Taxa</th></tr></thead>
+    <tbody>
+        <tr><td>Pix</td><td>0%* (Santander) ou ~2%</td></tr>
+        <tr><td>Débito</td><td>1,39%</td></tr>
+        <tr><td>Crédito 1x</td><td>3,49%</td></tr>
+        <tr><td>Crédito 12x</td><td>12,88%</td></tr>
+    </tbody>
+</table>
+
+<div class="callout callout-info">
+    <span class="callout-title">📋 Documentação Oficial</span>
+    <a href="https://docs.globalgetnet.com/pt/products/online-payments/regional-api" target="_blank">docs.globalgetnet.com</a> · <a href="https://docs.globalgetnet.com/en/products/online-payments/regional-api/swagger" target="_blank">Swagger</a>
+</div>
+
+<h2>10. Aspecto Comercial</h2>
+<p>Para detalhes sobre contratação, taxas negociadas, domicílio bancário e antecipação, consulte a página de <a href="comparativo.html">Comparativo</a>. Resumo: <strong>sem mensalidade</strong>, adesão grátis, antifraude/3DS inclusos. Domicílio em qualquer banco (não precisa ser Santander). Pix 0% se correntista Santander.</p>
+
+<div class="footer">POC Pagamentos — CN Consulting · <a href="banco.html">← Banco de Dados</a> · <a href="mercado-pago.html">Mercado Pago →</a></div>
+</div>
+</div>
+</div>
+<script>
+(function(){
+  var path = window.location.pathname.split('/').pop() || 'index.html';
+  document.querySelectorAll('.nav-link').forEach(function(link){
+    var page = link.getAttribute('data-page');
+    if(path === page + '.html' || (path === '' && page === 'index')){
+      link.classList.add('active');
+    }
+  });
+})();
+</script>
+</body>
+</html>

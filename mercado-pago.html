@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mercado Pago — POC Pagamentos</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="layout">
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open');document.querySelector('.sidebar-overlay').classList.toggle('show')">&#9776;</button>
+<div class="sidebar-overlay" onclick="document.querySelector('.sidebar').classList.remove('open');this.classList.remove('show')"></div>
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <h1>💳 POC Pagamentos</h1>
+        <div class="sub">Guia de Integração Multi-Gateway</div>
+    </div>
+    <nav>
+        <div class="nav-section">
+            <div class="nav-label">Visão Geral</div>
+            <a href="index.html" class="nav-link" data-page="index"><span class="icon">🏠</span> Início</a>
+            <a href="comparativo.html" class="nav-link" data-page="comparativo"><span class="icon">⚖️</span> Comparativo</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-label">Arquitetura</div>
+            <a href="stack.html" class="nav-link" data-page="stack"><span class="icon">🏗️</span> Stack & Infra</a>
+            <a href="banco.html" class="nav-link" data-page="banco"><span class="icon">🗄️</span> Banco de Dados</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-label">Integradores</div>
+            <a href="getnet.html" class="nav-link" data-page="getnet"><span class="icon">🔴</span> Getnet</a>
+            <a href="mercado-pago.html" class="nav-link" data-page="mercado-pago"><span class="icon">🔵</span> Mercado Pago</a>
+            <a href="pagarme.html" class="nav-link" data-page="pagarme"><span class="icon">🟢</span> Pagar.me</a>
+        </div>
+    </nav>
+</aside>
+<div class="main">
+<div class="content page-mp">
+<div class="hero">
+    <h1>🔵 Integração Mercado Pago</h1>
+    <p class="sub">Checkout Transparente via Orders API — Cartão de Crédito e Pix QR Code</p>
+    <div class="badges">
+        <span class="badge">⚡ D+0 Instantâneo</span>
+        <span class="badge">💸 Pix 0%</span>
+        <span class="badge">💳 Cartão</span>
+        <span class="badge">📦 SDK Oficial</span>
+        <span class="badge">🤖 MCP Server</span>
+    </div>
+</div>
+
+<h2>Visão Geral</h2>
+<p>O <strong>Mercado Pago</strong> (Grupo Mercado Livre) oferece três modelos de checkout: <strong>Checkout Pro</strong> (hosted, redireciona), <strong>Checkout Bricks</strong> (componentes embed) e <strong>Checkout Transparente</strong> (API direta, controle total). Esta POC foca no Checkout Transparente via <strong>Orders API</strong> — a nova API unificada.</p>
+
+<div class="callout callout-success">
+    <span class="callout-title">✅ Principais Vantagens</span>
+    <ul>
+        <li><strong>D+0 instantâneo</strong> — dinheiro cai na conta na hora</li>
+        <li><strong>Pix 0%</strong> — sem taxa para receber via Pix</li>
+        <li>Onboarding em minutos — crie conta e comece a testar</li>
+        <li>SDK oficial em JS, PHP, Python, .NET, Java, Go</li>
+        <li>MCP Server para integração com IA</li>
+        <li>Discord community ativa</li>
+    </ul>
+</div>
+
+<h2>1. Credenciais & Ambientes</h2>
+<p>O Mercado Pago usa <strong>credenciais de teste</strong> e <strong>credenciais de produção</strong>, ambas obtidas no painel "Suas Integrações".</p>
+
+<table>
+    <thead><tr><th>Tipo</th><th>Descrição</th></tr></thead>
+    <tbody>
+        <tr><td><code>public_key</code></td><td>Chave pública — usada no frontend para tokenizar cartão</td></tr>
+        <tr><td><code>access_token</code></td><td>Chave secreta — usada no backend para criar pagamentos</td></tr>
+        <tr><td>Base URL</td><td><code>https://api.mercadopago.com</code> (produção) / <code>https://api.mercadopago.com</code> (teste com credenciais de teste)</td></tr>
+    </tbody>
+</table>
+
+<h4>Como obter</h4>
+<ol>
+    <li>Acesse <a href="https://www.mercadopago.com.br/developers/pt" target="_blank">Mercado Pago Developers</a></li>
+    <li>Crie uma aplicação: <strong>Suas Integrações → Criar aplicação</strong></li>
+    <li>Selecione <strong>Pagamentos Online → Checkout Transparente → API de Orders</strong></li>
+    <li>Copie as credenciais de teste (automaticamente geradas)</li>
+    <li>Para produção: complete verificação de identidade e pegue credenciais de produção</li>
+</ol>
+
+<h2>2. Tokenização de Cartão (Frontend)</h2>
+<p>Antes de criar o pagamento, tokenize o cartão no frontend usando o SDK do Mercado Pago com a <code>public_key</code>:</p>
+
+<pre><code><span class="tok-comment">// Instalar: npm install @mercadopago/sdk-react</span>
+import { Payment, initMercadoPago } from <span class="tok-str">'@mercadopago/sdk-react'</span>;
+
+initMercadoPago({ publicKey: <span class="tok-str">'TEST-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'</span> });
+
+<span class="tok-comment">// Tokenizar cartão</span>
+const token = await Payment.createToken({
+  cardNumber: <span class="tok-str">'5031433215406201'</span>,
+  cardholderName: <span class="tok-str">'JOAO SILVA'</span>,
+  cardExpirationMonth: <span class="tok-str">'12'</span>,
+  cardExpirationYear: <span class="tok-str">'2030'</span>,
+  securityCode: <span class="tok-str">'123'</span>,
+  identificationType: <span class="tok-str">'CPF'</span>,
+  identificationNumber: <span class="tok-str">'12345678900'</span>
+});
+<span class="tok-comment">// → token.id = "1234567890abcdef..."</span></code></pre>
+
+<div class="callout callout-info">
+    <span class="callout-title">💡 Por que tokenizar no frontend?</span>
+    O PAN (número do cartão) nunca chega ao nosso backend — reduz escopo PCI DSS para SAQ-A. O token é seguro e descartável.
+</div>
+
+<h2>3. Pagamento por Cartão de Crédito (Orders API)</h2>
+<div class="endpoint"><span class="method m-post">POST</span><span class="url">https://api.mercadopago.com/v1/orders</span></div>
+
+<h4>Requisição</h4>
+<pre><code>curl --request POST \
+  --url https://api.mercadopago.com/v1/orders \
+  --header <span class="tok-str">'Authorization: Bearer {access_token}'</span> \
+  --header <span class="tok-str">'Content-Type: application/json'</span> \
+  --header <span class="tok-str">'X-Idempotency-Key: {unique_uuid}'</span> \
+  --data '{
+  <span class="tok-key">"type"</span>: <span class="tok-str">"online"</span>,
+  <span class="tok-key">"processing_mode"</span>: <span class="tok-str">"automatic"</span>,
+  <span class="tok-key">"total_amount"</span>: <span class="tok-str">"100.00"</span>,
+  <span class="tok-key">"description"</span>: <span class="tok-str">"Pedido ORDER-001"</span>,
+  <span class="tok-key">"transactions"</span>: {
+    <span class="tok-key">"payments"</span>: [
+      {
+        <span class="tok-key">"amount"</span>: <span class="tok-str">"100.00"</span>,
+        <span class="tok-key">"payment_method"</span>: {
+          <span class="tok-key">"type"</span>: <span class="tok-str">"credit_card"</span>,
+          <span class="tok-key">"token"</span>: <span class="tok-str">"{card_token_from_frontend}"</span>,
+          <span class="tok-key">"installments"</span>: <span class="tok-num">1</span>,
+          <span class="tok-key">"statement_descriptor"</span>: <span class="tok-str">"LOJA*COMPRA-001"</span>
+        }
+      }
+    ]
+  },
+  <span class="tok-key">"payer"</span>: {
+    <span class="tok-key">"email"</span>: <span class="tok-str">"joao@example.com"</span>,
+    <span class="tok-key">"first_name"</span>: <span class="tok-str">"João"</span>,
+    <span class="tok-key">"last_name"</span>: <span class="tok-str">"Silva"</span>,
+    <span class="tok-key">"identification"</span>: {
+      <span class="tok-key">"type"</span>: <span class="tok-str">"CPF"</span>,
+      <span class="tok-key">"number"</span>: <span class="tok-str">"12345678900"</span>
+    }
+  }
+}'</code></pre>
+
+<h4>Resposta (201 Created)</h4>
+<pre><code>{
+  <span class="tok-key">"id"</span>: <span class="tok-str">"ORD-1234567890"</span>,
+  <span class="tok-key">"status"</span>: <span class="tok-str">"processed"</span>,
+  <span class="tok-key">"status_detail"</span>: <span class="tok-str">"accredited"</span>,
+  <span class="tok-key">"total_amount"</span>: <span class="tok-str">"100.00"</span>,
+  <span class="tok-key">"transactions"</span>: {
+    <span class="tok-key">"payments"</span>: [{
+      <span class="tok-key">"id"</span>: <span class="tok-str">"PAY-1234567890"</span>,
+      <span class="tok-key">"status"</span>: <span class="tok-str">"approved"</span>,
+      <span class="tok-key">"status_detail"</span>: <span class="tok-str">"accredited"</span>,
+      <span class="tok-key">"payment_method"</span>: {
+        <span class="tok-key">"type"</span>: <span class="tok-str">"credit_card"</span>,
+        <span class="tok-key">"brand"</span>: <span class="tok-str">"master"</span>,
+        <span class="tok-key">"last_four"</span>: <span class="tok-str">"0000"</span>
+      }
+    }]
+  }
+}</code></pre>
+
+<h2>4. Pagamento via Pix QR Code</h2>
+<p>O Mercado Pago suporta Pix via <strong>Checkout Transparente</strong> (API direta) ou <strong>Checkout Pro</strong> (hosted). Para API direta, use a API de Orders com <code>payment_method.type: "pix"</code>:</p>
+
+<div class="endpoint"><span class="method m-post">POST</span><span class="url">https://api.mercadopago.com/v1/orders</span></div>
+
+<h4>Requisição</h4>
+<pre><code>curl --request POST \
+  --url https://api.mercadopago.com/v1/orders \
+  --header <span class="tok-str">'Authorization: Bearer {access_token}'</span> \
+  --header <span class="tok-str">'Content-Type: application/json'</span> \
+  --header <span class="tok-str">'X-Idempotency-Key: {unique_uuid}'</span> \
+  --data '{
+  <span class="tok-key">"type"</span>: <span class="tok-str">"online"</span>,
+  <span class="tok-key">"processing_mode"</span>: <span class="tok-str">"automatic"</span>,
+  <span class="tok-key">"total_amount"</span>: <span class="tok-str">"100.00"</span>,
+  <span class="tok-key">"description"</span>: <span class="tok-str">"Pedido PIX-001"</span>,
+  <span class="tok-key">"transactions"</span>: {
+    <span class="tok-key">"payments"</span>: [
+      {
+        <span class="tok-key">"amount"</span>: <span class="tok-str">"100.00"</span>,
+        <span class="tok-key">"payment_method"</span>: {
+          <span class="tok-key">"type"</span>: <span class="tok-str">"pix"</span>,
+          <span class="tok-key">"expiration_time"</span>: <span class="tok-num">1800</span>
+        }
+      }
+    ]
+  },
+  <span class="tok-key">"payer"</span>: {
+    <span class="tok-key">"email"</span>: <span class="tok-str">"joao@example.com"</span>,
+    <span class="tok-key">"first_name"</span>: <span class="tok-str">"João"</span>,
+    <span class="tok-key">"last_name"</span>: <span class="tok-str">"Silva"</span>,
+    <span class="tok-key">"identification"</span>: {
+      <span class="tok-key">"type"</span>: <span class="tok-str">"CPF"</span>,
+      <span class="tok-key">"number"</span>: <span class="tok-str">"12345678900"</span>
+    }
+  }
+}'</code></pre>
+
+<h4>Resposta (201 Created)</h4>
+<pre><code>{
+  <span class="tok-key">"id"</span>: <span class="tok-str">"ORD-0987654321"</span>,
+  <span class="tok-key">"status"</span>: <span class="tok-str">"action_required"</span>,
+  <span class="tok-key">"status_detail"</span>: <span class="tok-str">"waiting_payment"</span>,
+  <span class="tok-key">"transactions"</span>: {
+    <span class="tok-key">"payments"</span>: [{
+      <span class="tok-key">"status"</span>: <span class="tok-str">"pending"</span>,
+      <span class="tok-key">"status_detail"</span>: <span class="tok-str">"waiting_payment"</span>,
+      <span class="tok-key">"payment_method"</span>: {
+        <span class="tok-key">"type"</span>: <span class="tok-str">"pix"</span>,
+        <span class="tok-key">"qr_code_base64"</span>: <span class="tok-str">"iVBORw0KGgoAAAANSUhEUg..."</span>,
+        <span class="tok-key">"qr_code"</span>: <span class="tok-str">"00020126580014br.gov.bcb.pix..."</span>,
+        <span class="tok-key">"expiration_time"</span>: <span class="tok-num">1800</span>
+      }
+    }]
+  }
+}</code></pre>
+<div class="callout callout-info">
+    <span class="callout-title">💡 O que fazer com a resposta</span>
+    <code>qr_code</code> = string "copia e cola" · <code>qr_code_base64</code> = imagem QR Code em base64. Exiba ambos para o cliente. Pix é assíncrono — receba confirmação via webhook.
+</div>
+
+<h2>5. Webhooks — Notificações</h2>
+<p>Configure a URL de notificação em <strong>Suas Integrações → Notificações</strong>. O Mercado Pago envia HTTP POST para sua URL quando o status muda.</p>
+
+<h4>Configurar via API</h4>
+<pre><code>curl --request POST \
+  --url https://api.mercadopago.com/v1/notification_url \
+  --header <span class="tok-str">'Authorization: Bearer {access_token}'</span> \
+  --data '{ <span class="tok-key">"url"</span>: <span class="tok-str">"https://seu-backend.com/api/webhook/mercado-pago"</span> }'</code></pre>
+
+<h4>Exemplo de Webhook Recebido</h4>
+<pre><code>{
+  <span class="tok-key">"action"</span>: <span class="tok-str">"payment.updated"</span>,
+  <span class="tok-key">"data"</span>: {
+    <span class="tok-key">"id"</span>: <span class="tok-str">"PAY-1234567890"</span>
+  }
+}
+<span class="tok-comment">// → Fazer GET /v1/payments/{id} para obter detalhes completos</span></code></pre>
+
+<h4>Eventos principais</h4>
+<table>
+    <thead><tr><th>Evento</th><th>Descrição</th></tr></thead>
+    <tbody>
+        <tr><td><code>payment.created</code></td><td>Pagamento criado</td></tr>
+        <tr><td><code>payment.updated</code></td><td>Status atualizado (approved, rejected, etc.)</td></tr>
+        <tr><td><code>merchant_order.updated</code></td><td>Order atualizada</td></tr>
+    </tbody>
+</table>
+
+<h2>6. Status de Pagamento</h2>
+<table>
+    <thead><tr><th>Status</th><th>Descrição</th></tr></thead>
+    <tbody>
+        <tr><td><span class="status status-approved">approved</span></td><td>Aprovado</td></tr>
+        <tr><td><span class="status status-pending">pending</span></td><td>Aguardando (ex: Pix não pago ainda)</td></tr>
+        <tr><td><span class="status status-approved">authorized</span></td><td>Autorizado (pré-auth)</td></tr>
+        <tr><td><span class="status status-denied">rejected</span></td><td>Rejeitado</td></tr>
+        <tr><td><span class="status status-denied">cancelled</span></td><td>Cancelado</td></tr>
+        <tr><td><span class="status status-error">refunded</span></td><td>Estornado</td></tr>
+    </tbody>
+</table>
+
+<h2>7. SDKs Oficiais</h2>
+<table>
+    <thead><tr><th>Linguagem</th><th>Pacote</th></tr></thead>
+    <tbody>
+        <tr><td>JavaScript/TypeScript</td><td><code>@mercadopago/sdk-react</code> (frontend) · <code>mercadopago-sdk</code> (backend)</td></tr>
+        <tr><td>PHP</td><td><code>mercadopago/dx-php</code></td></tr>
+        <tr><td>Python</td><td><code>mercadopago</code></td></tr>
+        <tr><td>.NET</td><td><code>MercadoPago.SDK</code></td></tr>
+        <tr><td>Java</td><td><code>mercadopago-sdk-java</code></td></tr>
+    </tbody>
+</table>
+
+<h2>8. Cartões de Teste</h2>
+<table>
+    <thead><tr><th>Bandeira</th><th>Número</th><th>CVV</th></tr></thead>
+    <tbody>
+        <tr><td>Mastercard</td><td><code>5031433215406201</code></td><td>123</td></tr>
+        <tr><td>Visa</td><td><code>4509953566233704</code></td><td>123</td></tr>
+        <tr><td>Amex</td><td><code>371180828253624</code></td><td>1234</td></tr>
+    </tbody>
+</table>
+
+<h2>9. Taxas</h2>
+<table>
+    <thead><tr><th>Modalidade</th><th>Promo (30 dias/R$5k)</th><th>Conta Pro (&gt;R$10k)</th></tr></thead>
+    <tbody>
+        <tr><td>Pix</td><td>0%</td><td>0%</td></tr>
+        <tr><td>Débito</td><td>0,74%</td><td>1,61%</td></tr>
+        <tr><td>Crédito 1x</td><td>~0,74%</td><td>3,85%</td></tr>
+        <tr><td>Crédito 12x</td><td>8,99%</td><td>13,69%</td></tr>
+    </tbody>
+</table>
+<div class="callout callout-warn">
+    <span class="callout-title">⚠️ Atenção às Taxas Promocionais</span>
+    Após os primeiros 30 dias (ou R$5k em vendas), as taxas sobem significativamente se você não migrar para Conta Pro. No tier baixo (&lt;R$3k/mês), o 12x salta para <strong>22,59%</strong>.
+</div>
+
+<h2>10. Aspecto Comercial</h2>
+<p>Para contratação: criar conta no Mercado Pago (PF ou PJ), criar aplicação no portal de developers, obter credenciais. Sem mensalidade, sem adesão. Recebimento <strong>D+0 instantâneo</strong> na conta Mercado Pago. Saque para banco externo tem taxa (~R$3,67 por saque). Para detalhes completos, veja <a href="comparativo.html">Comparativo</a>.</p>
+
+<div class="callout callout-info">
+    <span class="callout-title">📋 Documentação Oficial</span>
+    <a href="https://www.mercadopago.com.br/developers/pt/docs/checkout-api-orders/overview" target="_blank">Mercado Pago Developers</a> · <a href="https://www.mercadopago.com.br/developers/pt/reference" target="_blank">API Reference</a>
+</div>
+
+<div class="footer">POC Pagamentos — CN Consulting · <a href="getnet.html">← Getnet</a> · <a href="pagarme.html">Pagar.me →</a></div>
+</div>
+</div>
+</div>
+<script>
+(function(){
+  var path = window.location.pathname.split('/').pop() || 'index.html';
+  document.querySelectorAll('.nav-link').forEach(function(link){
+    var page = link.getAttribute('data-page');
+    if(path === page + '.html' || (path === '' && page === 'index')){
+      link.classList.add('active');
+    }
+  });
+})();
+</script>
+</body>
+</html>

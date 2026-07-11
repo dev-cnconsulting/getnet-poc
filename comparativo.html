@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comparativo — POC Pagamentos</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="layout">
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open');document.querySelector('.sidebar-overlay').classList.toggle('show')">&#9776;</button>
+<div class="sidebar-overlay" onclick="document.querySelector('.sidebar').classList.remove('open');this.classList.remove('show')"></div>
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <h1>💳 POC Pagamentos</h1>
+        <div class="sub">Guia de Integração Multi-Gateway</div>
+    </div>
+    <nav>
+        <div class="nav-section">
+            <div class="nav-label">Visão Geral</div>
+            <a href="index.html" class="nav-link" data-page="index"><span class="icon">🏠</span> Início</a>
+            <a href="comparativo.html" class="nav-link" data-page="comparativo"><span class="icon">⚖️</span> Comparativo</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-label">Arquitetura</div>
+            <a href="stack.html" class="nav-link" data-page="stack"><span class="icon">🏗️</span> Stack & Infra</a>
+            <a href="banco.html" class="nav-link" data-page="banco"><span class="icon">🗄️</span> Banco de Dados</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-label">Integradores</div>
+            <a href="getnet.html" class="nav-link" data-page="getnet"><span class="icon">🔴</span> Getnet</a>
+            <a href="mercado-pago.html" class="nav-link" data-page="mercado-pago"><span class="icon">🔵</span> Mercado Pago</a>
+            <a href="pagarme.html" class="nav-link" data-page="pagarme"><span class="icon">🟢</span> Pagar.me</a>
+        </div>
+    </nav>
+</aside>
+<div class="main">
+<div class="content page-comparativo">
+<div class="hero">
+    <h1>⚖️ Comparativo de Integradores</h1>
+    <p class="sub">Análise lado a lado de taxas, features, prós e contras de cada gateway</p>
+</div>
+
+<h2>Tabela Resumo — Taxas e Características</h2>
+<table>
+    <thead><tr><th>Critério</th><th>🔴 Getnet</th><th>🔵 Mercado Pago</th><th>🟢 Pagar.me</th></tr></thead>
+    <tbody>
+        <tr><td><strong>Cartão 1x</strong></td><td>3,49%</td><td>3,85% (Pro)</td><td>~3,87% (negociável)</td></tr>
+        <tr><td><strong>Cartão 12x</strong></td><td>12,88%</td><td>13,69% (Pro)</td><td>~16% (neg. volume)</td></tr>
+        <tr><td><strong>Pix</strong></td><td>0%* (Santander) ou ~2%</td><td>0% (promocional)</td><td>1,19%</td></tr>
+        <tr><td><strong>Débito</strong></td><td>1,39%</td><td>1,61% (Pro)</td><td>~1,99%</td></tr>
+        <tr><td><strong>Mensalidade</strong></td><td>Grátis</td><td>Grátis</td><td>Grátis</td></tr>
+        <tr><td><strong>Adesão</strong></td><td>Grátis</td><td>Grátis</td><td>Grátis</td></tr>
+        <tr><td><strong>Recebimento</strong></td><td>D+2 (ou antecipação)</td><td><strong>D+0 (instantâneo)</strong></td><td>D+2 a D+30</td></tr>
+        <tr><td><strong>API Quality</strong></td><td>✅ Boa</td><td>✅ Boa, bem documentada</td><td>✅ Excelente (PSP tech)</td></tr>
+        <tr><td><strong>SDKs</strong></td><td>Postman/curl</td><td>JS, PHP, Python, .NET, Java</td><td>JS, PHP, Python, Ruby, Go</td></tr>
+        <tr><td><strong>3D Secure</strong></td><td>✅ Incluso</td><td>✅ Incluso</td><td>⚠️ Pago à parte</td></tr>
+        <tr><td><strong>Antifraude</strong></td><td>✅ Incluso</td><td>✅ Incluso</td><td>⚠️ Pago à parte</td></tr>
+        <tr><td><strong>Tokenização</strong></td><td>✅ Cofre</td><td>✅ Sim</td><td>✅ Sim</td></tr>
+        <tr><td><strong>Split</strong></td><td>✅ Sim</td><td>✅ Sim</td><td>✅ Sim (melhor do mercado)</td></tr>
+        <tr><td><strong>Recorrência</strong></td><td>✅ Sim</td><td>✅ Sim</td><td>✅ Sim (via planos)</td></tr>
+        <tr><td><strong>Pix API</strong></td><td>✅ Completo</td><td>✅ Completo</td><td>✅ Completo</td></tr>
+        <tr><td><strong>Checkout Hosted</strong></td><td>✅ Sim (Checkout Getnet)</td><td>✅ Checkout Pro</td><td>✅ Checkout Pagar.me</td></tr>
+        <tr><td><strong>Checkout Transparente</strong></td><td>✅ API direta</td><td>✅ API Orders</td><td>✅ API v5</td></tr>
+        <tr><td><strong>Domicílio bancário</strong></td><td>Qualquer banco</td><td>Conta Mercado Pago</td><td>Qualquer banco</td></tr>
+        <tr><td><strong>Onboarding</strong></td><td>Médio (homologação)</td><td><strong>Rápido (minutos)</strong></td><td>Médio</td></tr>
+        <tr><td><strong>Grupo</strong></td><td>Santander</td><td>Mercado Livre</td><td>Stone</td></tr>
+    </tbody>
+</table>
+
+<h2>Análise por Player</h2>
+
+<h3>🔴 Getnet (Santander)</h3>
+<div class="card-grid">
+    <div class="card"><div class="card-icon">✅</div><h4>Prós</h4><p>Pix 0% para correntistas Santander · Antifraude e 3DS inclusos · Data Center TIER IV · Taxas competitivas (3,49% crédito 1x) · Domicílio em qualquer banco</p></div>
+    <div class="card"><div class="card-icon">❌</div><h4>Contras</h4><p>API funcional mas menos polida que concorrentes · Homologação obrigatória com time Getnet (processo lento) · Documentação fragmentada · Não é dev-first</p></div>
+</div>
+
+<h3>🔵 Mercado Pago</h3>
+<div class="card-grid">
+    <div class="card"><div class="card-icon">✅</div><h4>Prós</h4><p><strong>D+0 instantâneo</strong> — dinheiro na hora · Pix 0% · Taxas agressivas no início (0,74% débito, 8,99% 12x) · API madura com SDK oficial · Onboarding em minutos · MCP Server para IA · Discord community</p></div>
+    <div class="card"><div class="card-icon">❌</div><h4>Contras</h4><p>Após período promocional, taxas sobem muito (12x salta para 22,59% no tier baixo) · Ecossistema fechado (dinheiro fica na conta MP) · Menos flexível para split avançado · Checkout Pro redireciona para MP</p></div>
+</div>
+
+<h3>🟢 Pagar.me (Stone)</h3>
+<div class="card-grid">
+    <div class="card"><div class="card-icon">✅</div><h4>Prós</h4><p><strong>API mais robusta e flexível do Brasil</strong> · docs.pagar.me excelentes · Retentativa transparente (salva 5-10% de vendas recusadas) · Split nativo (marketplace-ready) · Pix completo · Checkout hosted ou transparente · SDKs em 5 linguagens · LLMs.txt para IA</p></div>
+    <div class="card"><div class="card-icon">❌</div><h4>Contras</h4><p>Taxas de balcão altas (~25% em 12x) — precisam ser negociadas para volumes > R$50k · Antifraude pago à parte · Suporte às vezes lento · Requer conta transacional para Pix</p></div>
+</div>
+
+<h2>Taxas Detalhadas por Integrador</h2>
+
+<h3>Getnet — Taxas Padrão</h3>
+<table>
+    <thead><tr><th>Modalidade</th><th>Taxa</th><th>Prazo</th></tr></thead>
+    <tbody>
+        <tr><td>Pix (QR Code)</td><td>0%* a ~2%</td><td>Instantâneo</td></tr>
+        <tr><td>Débito à vista</td><td>1,39%</td><td>D+2</td></tr>
+        <tr><td>Crédito à vista (1x)</td><td>3,49%</td><td>D+2</td></tr>
+        <tr><td>Crédito 2x</td><td>7,98%</td><td>30 dias</td></tr>
+        <tr><td>Crédito 12x</td><td>12,88%</td><td>Parcelado</td></tr>
+    </tbody>
+</table>
+
+<h3>Mercado Pago — Taxas (Conta Pro, &gt;R$10k/mês)</h3>
+<table>
+    <thead><tr><th>Modalidade</th><th>Taxa</th><th>Prazo</th></tr></thead>
+    <tbody>
+        <tr><td>Pix</td><td>0%</td><td><strong>D+0 instantâneo</strong></td></tr>
+        <tr><td>Débito à vista</td><td>1,61%</td><td>D+0</td></tr>
+        <tr><td>Crédito à vista (1x)</td><td>3,85%</td><td>D+30 (ou antecipação)</td></tr>
+        <tr><td>Crédito 12x</td><td>13,69%</td><td>Parcelado</td></tr>
+    </tbody>
+</table>
+<div class="callout callout-warn">
+    <span class="callout-title">⚠️ Período Promocional Mercado Pago</span>
+    Nos primeiros 30 dias (ou R$5k em vendas): débito 0,74%, crédito 1x ~0,74%, 12x 8,99%. <strong>Após</strong>: tier baixo (&lt;R$3k) salta para 22,59% no 12x. Negocie conta Pro ao faturar R$10k+.
+</div>
+
+<h3>Pagar.me — Taxas de Balcão</h3>
+<table>
+    <thead><tr><th>Modalidade</th><th>Taxa</th><th>Prazo</th></tr></thead>
+    <tbody>
+        <tr><td>Pix</td><td>1,19%</td><td>D+0 (instantâneo)</td></tr>
+        <tr><td>Boleto</td><td>R$ 3,49 por boleto pago</td><td>D+15</td></tr>
+        <tr><td>Débito à vista</td><td>~1,99%</td><td>D+2</td></tr>
+        <tr><td>Crédito à vista (1x)</td><td>~3,87%</td><td>D+30</td></tr>
+        <tr><td>Crédito 12x</td><td>~16% (negociável)</td><td>Parcelado</td></tr>
+        <tr><td>Taxa por transação</td><td>R$ 0,99</td><td>—</td></tr>
+        <tr><td>Taxa por saque</td><td>R$ 3,67</td><td>—</td></tr>
+    </tbody>
+</table>
+<div class="callout callout-info">
+    <span class="callout-title">💡 Negociação Pagar.me</span>
+    As taxas de balcão do Pagar.me são altas para parcelamento, mas <strong>extremamente negociáveis</strong> para volumes > R$50k/mês. Entre em contato comercial para obter taxas personalizadas (pode chegar a ~11,99% no 12x).
+</div>
+
+<h2>Recomendação para o Nosso Cenário</h2>
+<div class="callout callout-info">
+    <span class="callout-title">📋 Contexto</span>
+    <strong>Início de operações</strong> · Player tecnológico · Boas taxas · Fácil integração via API · Cartão de crédito + Pix QR Code
+</div>
+
+<div class="compare-grid">
+    <div class="compare-card recommended">
+        <span class="badge-top">🥇 RECOMENDADO</span>
+        <h4>🔵 Mercado Pago</h4>
+        <div class="rate">0%<small> Pix + D+0</small></div>
+        <ul>
+            <li>D+0 instantâneo (fluxo de caixa)</li>
+            <li>Onboarding em minutos</li>
+            <li>SDK maduro, API bem documentada</li>
+            <li>Taxas promocionais excelentes</li>
+            <li>MCP Server para IA</li>
+        </ul>
+    </div>
+    <div class="compare-card">
+        <h4>🟢 Pagar.me</h4>
+        <div class="rate">1,19%<small> Pix</small></div>
+        <ul>
+            <li>API mais robusta do Brasil</li>
+            <li>Split nativo (marketplace)</li>
+            <li>Retentativa transparente</li>
+            <li>Checkout hosted ou transparente</li>
+            <li>Taxas negociáveis com volume</li>
+        </ul>
+    </div>
+    <div class="compare-card">
+        <h4>🔴 Getnet</h4>
+        <div class="rate">0%*<small> Pix (Santander)</small></div>
+        <ul>
+            <li>Antifraude + 3DS inclusos</li>
+            <li>Dataset TIER IV</li>
+            <li>Pix 0% se correntista Santander</li>
+            <li>API funcional (homologação lenta)</li>
+            <li>Sólido para operação estável</li>
+        </ul>
+    </div>
+</div>
+
+<h2>E o Stripe?</h2>
+<div class="callout callout-danger">
+    <span class="callout-title">🚫 Stripe — Não recomendado agora</span>
+    Embora a API do Stripe seja a melhor do mundo, no Brasil ela tem <strong>limitações críticas</strong>:
+    <ul>
+        <li><strong>Pix é "somente por convite"</strong> — precisa pedir acesso e pode ser negado/demorar</li>
+        <li><strong>Não suporta parcelamento de cartão no Brasil</strong> — limitação grave para e-commerce BR</li>
+        <li>Taxa de 3,99% + R$0,39 é a <strong>mais alta</strong> do mercado para cartão</li>
+        <li>Chargeback custa R$55 por contestação</li>
+    </ul>
+    <strong>Veredito:</strong> Excelente API mas o produto Brasil ainda não está pronto para operação completa com Pix + parcelamento.
+</div>
+
+<h2>Outros Players Considerados</h2>
+<table>
+    <thead><tr><th>Player</th><th>Taxa Crédito 1x</th><th>Por que não?</th></tr></thead>
+    <tbody>
+        <tr><td>Rede (Itaú)</td><td>~2,99%</td><td>Melhor taxa, mas exige histórico bancário forte com Itaú — não ideal para início</td></tr>
+        <tr><td>Stone/Ton</td><td>~3,49%</td><td>Taxas condicionadas a volume mínimo — rebaixamento automático se não bater meta</td></tr>
+        <tr><td>PagSeguro</td><td>~3,49%</td><td>API menos flexível, ecossistema fechado, token gerado de forma pouco usual</td></tr>
+        <tr><td>Cielo</td><td>~3,49%</td><td>Burocrática para API, foco em maquininha física</td></tr>
+        <tr><td>Asaas</td><td>~2,99%</td><td>Boa para boleto/Pix, mas cartão via parceiros — menos controle</td></tr>
+    </tbody>
+</table>
+
+<div class="footer">POC Pagamentos — CN Consulting · <a href="index.html">← Voltar ao início</a></div>
+</div>
+</div>
+</div>
+<script>
+(function(){
+  var path = window.location.pathname.split('/').pop() || 'index.html';
+  document.querySelectorAll('.nav-link').forEach(function(link){
+    var page = link.getAttribute('data-page');
+    if(path === page + '.html' || (path === '' && page === 'index')){
+      link.classList.add('active');
+    }
+  });
+})();
+</script>
+</body>
+</html>
