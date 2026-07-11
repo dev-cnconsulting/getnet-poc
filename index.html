@@ -279,6 +279,7 @@
             <li><a href="#3ds">3D Secure (Autenticação do Banco)</a></li>
             <li><a href="#seguranca">Segurança & PCI DSS</a></li>
             <li><a href="#pre-requisitos">Pré-requisitos para Produção</a></li>
+            <li><a href="#comercial">Aspecto Comercial & Contratação</a></li>
             <li><a href="#proximo-passos">Próximos Passos</a></li>
         </ol>
     </div>
@@ -1063,9 +1064,290 @@ x-seller-id: {seller_id}</code></pre>
     </table>
 </section>
 
-<!-- 14. PRÓXIMOS PASSOS -->
+<!-- 14. ASPECTO COMERCIAL & CONTRATAÇÃO -->
+<section id="comercial">
+    <h2>14. Aspecto Comercial & Contratação</h2>
+
+    <h3>14.1 O que é a Getnet?</h3>
+    <p>A <strong>Getnet</strong> é a instituição de pagamento do <strong>Grupo Santander</strong>. Funciona como uma <em>credenciadora/adquirente</em> — processa transações de cartão (crédito, débito), Pix, boleto e outros meios de pagamento, repassando ao estabelecimento os valores descontados das taxas acordadas. É uma das maiores credenciadoras do Brasil, com Data Center próprio certificado TIER IV (único na América Latina).</p>
+
+    <div class="callout callout-info">
+        <span class="callout-title">🏦 Pertencimento</span>
+        Getnet é uma empresa do <strong>Santander Brasil</strong>. Para integração de API (e-commerce), é uma credenciadora <strong>independente do banco</strong> — você pode ser cliente Getnet tendo conta em qualquer banco.
+    </div>
+
+    <h3>14.2 Como Contratar — Passo a Passo</h3>
+
+    <h4>📦 Para E-commerce / API (nossa POC)</h4>
+    <table>
+        <thead><tr><th>#</th><th>Etapa</th><th>Detalhes</th></tr></thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td><strong>Cadastro no Portal</strong></td>
+                <td>Acessar <a href="https://cadastro.getnet.com.br" target="_blank">cadastro.getnet.com.br</a> e preencher o formulário com dados da empresa (CNPJ ou CPF para PF)</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td><strong>Documentação</strong></td>
+                <td>Enviar documentos: CNPJ, contrato social, RG/CPF dos sócios, comprovante de endereço da empresa. Para PF: RG, CPF e comprovante de endereço</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td><strong>Análise de Risco</strong></td>
+                <td>A Getnet (time de Prevenção a Fraudes) avalia o perfil do negócio, MCC (Merchant Category Code), histórico e volume estimado</td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td><strong>Aprovação & Acreditação</strong></td>
+                <td>Após aprovação, você recebe o <code>seller_id</code> e pode acessar o <a href="https://minhaconta.getnet.com.br" target="_blank">Portal Minha Conta</a></td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td><strong>Obter Credenciais de API</strong></td>
+                <td>No Portal → <strong>Página Inicial → Meus Serviços → Chaves de Autenticação Plataforma Digital</strong>. Copiar <code>seller_id</code>, <code>client_id</code> e <code>client_secret</code></td>
+            </tr>
+            <tr>
+                <td>6</td>
+                <td><strong>Configurar URLs de Callback</strong></td>
+                <td>No mesmo portal, em <strong>Configurações adicionais de produtos</strong>, informar as 4 URLs de notificação (crédito, débito, boleto, recorrência)</td>
+            </tr>
+            <tr>
+                <td>7</td>
+                <td><strong>Homologação</strong></td>
+                <td>Time de integração Getnet valida os fluxos de pagamento em ambiente de pré-produção</td>
+            </tr>
+            <tr>
+                <td>8</td>
+                <td><strong>Go-Live</strong></td>
+                <td>Credenciais de produção liberadas — transações reais ativas</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="callout callout-warn">
+        <span class="callout-title">⚠️ Pré-requisitos de Cadastro</span>
+        <ul>
+            <li><strong>CNPJ ativo</strong> na Receita Federal (ou CPF para Pessoa Física)</li>
+            <li>Situação cadastral <strong>Regular</strong> na Receita (irregular bloqueia recebimentos)</li>
+            <li>Conta bancária <strong>PJ</strong> para CNPJ (conta PF apenas para MEI que use CPF)</li>
+            <li>Endereço comercial válido</li>
+            <li>Não é obrigatório ter conta no Santander — qualquer banco serve</li>
+        </ul>
+    </div>
+
+    <h4>📞 Canais de Contratação</h4>
+    <table>
+        <thead><tr><th>Canal</th><th>Contato</th></tr></thead>
+        <tbody>
+            <tr><td>WhatsApp de Vendas</td><td><a href="https://wa.me/551132982400" target="_blank">+55 11 3298-2400</a></td></tr>
+            <tr><td>Telefone (Capitais)</td><td>4002-4000</td></tr>
+            <tr><td>Telefone (Demais regiões)</td><td>4003-4000</td></tr>
+            <tr><td>Portal de Cadastro</td><td><a href="https://cadastro.getnet.com.br" target="_blank">cadastro.getnet.com.br</a></td></tr>
+            <tr><td>Portal do Cliente (Minha Conta)</td><td><a href="https://minhaconta.getnet.com.br" target="_blank">minhaconta.getnet.com.br</a></td></tr>
+            <tr><td>Central de Vendas Santander</td><td>0800 013 7333 (Seg–Sex 08h–20h)</td></tr>
+        </tbody>
+    </table>
+
+    <h3>14.3 Taxas e Custos</h3>
+
+    <h4>💳 Maquininhas Físicas (referência)</h4>
+    <table>
+        <thead><tr><th>Produto</th><th>Taxa de Adesão</th><th>Aluguel/Mês</th><th>Condição Aluguel Zero</th></tr></thead>
+        <tbody>
+            <tr>
+                <td><strong>Get Lite</strong></td>
+                <td>Grátis</td>
+                <td>R$ 19,90</td>
+                <td>Faturando R$ 1.000/mês → R$ 0,00</td>
+            </tr>
+            <tr>
+                <td><strong>Get Clássica</strong></td>
+                <td>Grátis</td>
+                <td>R$ 79,90</td>
+                <td>Faturando R$ 10.000/mês → R$ 0,00</td>
+            </tr>
+            <tr>
+                <td><strong>Get Smart</strong></td>
+                <td>Grátis</td>
+                <td>R$ 119,90</td>
+                <td>Faturando R$ 60.000/mês → R$ 0,00</td>
+            </tr>
+            <tr>
+                <td><strong>Get Tap</strong> (celular)</td>
+                <td>Grátis</td>
+                <td>R$ 0,00 (sem aluguel)</td>
+                <td>Paga apenas taxa por transação</td>
+            </tr>
+            <tr>
+                <td><strong>Link de Pagamento</strong></td>
+                <td>Grátis</td>
+                <td>R$ 0,00</td>
+                <td>R$ 1,00 por link pago + taxa da bandeira</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>📊 Taxas de Desconto por Bandeira (Maquininha Padrão)</h4>
+    <table>
+        <thead><tr><th>Modalidade</th><th>Taxa</th><th>Prazo de Recebimento</th></tr></thead>
+        <tbody>
+            <tr><td>Pix (QR Code)</td><td>0%* a ~2%</td><td>Instantâneo</td></tr>
+            <tr><td>Débito à vista</td><td>1,39% – 1,69%</td><td>2 dias úteis (D+2)</td></tr>
+            <tr><td>Crédito à vista (1x)</td><td>3,49% – 3,59%</td><td>2 dias úteis (D+2)</td></tr>
+            <tr><td>Crédito 2x</td><td>7,98%</td><td>30 dias (parcela a parcela)</td></tr>
+            <tr><td>Crédito 3x</td><td>8,47%</td><td>30/60/90 dias</td></tr>
+            <tr><td>Crédito 4x</td><td>8,96%</td><td>...</td></tr>
+            <tr><td>Crédito 5x</td><td>9,45%</td><td>...</td></tr>
+            <tr><td>Crédito 6x</td><td>9,94%</td><td>...</td></tr>
+            <tr><td>Crédito 7x</td><td>10,43%</td><td>...</td></tr>
+            <tr><td>Crédito 8x</td><td>10,92%</td><td>...</td></tr>
+            <tr><td>Crédito 9x</td><td>11,41%</td><td>...</td></tr>
+            <tr><td>Crédito 10x</td><td>11,90%</td><td>...</td></tr>
+            <tr><td>Crédito 11x</td><td>12,39%</td><td>...</td></tr>
+            <tr><td>Crédito 12x</td><td>12,88%</td><td>12 parcelas mensais</td></tr>
+        </tbody>
+    </table>
+
+    <div class="callout callout-info">
+        <span class="callout-title">💡 Taxa Pix 0%</span>
+        Clientes correntistas Santander com domicílio bancário e chave Pix ativa no banco têm <strong>taxa de Pix 0%</strong>. Para clientes não-Santander, a taxa de Pix pode variar conforme o modelo elegível.
+    </div>
+
+    <h4>💸 Taxas Especiais — Clientes Santander PF (Get Tap / Mobile)</h4>
+    <table>
+        <thead><tr><th>Produto</th><th>Débito</th><th>Crédito 1x</th><th>Crédito 12x</th><th>Pix</th></tr></thead>
+        <tbody>
+            <tr><td>Get Tap (celular)</td><td>0,89%</td><td>2,98%</td><td>15,88%</td><td>0%*</td></tr>
+            <tr><td>Get Lite (maquininha)</td><td>1,39%</td><td>3,49%</td><td>12,88%</td><td>0%*</td></tr>
+            <tr><td>Get Clássica (PF Santander)</td><td>1,69%</td><td>3,59%</td><td>13,48%</td><td>0%*</td></tr>
+            <tr><td>Link de Pagamento</td><td>1,90%</td><td>3,50%</td><td>16,59%</td><td>0%*</td></tr>
+        </tbody>
+    </table>
+
+    <div class="callout callout-warn">
+        <span class="callout-title">⚠️ Sobre as Taxas</span>
+        As taxas listadas são <strong>referências públicas</strong> (2025–2026). As taxas efetivas para cada estabelecimento são <strong>negociadas individualmente</strong> no contrato de adesão, variando conforme: volume estimado, tipo de negócio (MCC), prazo de recebimento e produtos contratados. Consulte sempre seu contrato para a taxa exata.
+    </div>
+
+    <h4>💵 Antecipação de Recebíveis</h4>
+    <p>É possível antecipar o recebimento das vendas (receber antes do prazo padrão D+2):</p>
+    <ul>
+        <li><strong>Prazo normal</strong>: D+2 (cartão) — recebimento em 2 dias úteis</li>
+        <li><strong>Antecipação</strong>: Receber em <strong>até 2 dias úteis</strong> a partir da data da venda (recebe antes)</li>
+        <li><strong>Modalidade</strong>: Parcial (antecipa algumas vendas) ou Total (antecipa todas)</li>
+        <li><strong>Como solicitar</strong>: App Santander Empresas, Internet Banking ou Central de Atendimento</li>
+        <li><strong>Custo</strong>: Há uma taxa de antecipação (gravame/CESSÃO de crédito) — valor acordado no contrato</li>
+        <li><strong>Mecanismo</strong>: A antecipação é feita por cessão de crédito dos recebíveis ao Santander, sujeita à aprovação</li>
+    </ul>
+
+    <h3>14.4 Onde o Dinheiro É Depositado?</h3>
+    <table>
+        <thead><tr><th>Item</th><th>Descrição</th></tr></thead>
+        <tbody>
+            <tr>
+                <td><strong>Domicílio Bancário</strong></td>
+                <td>A conta onde o dinheiro das vendas é depositado. <strong>Não precisa ser Santander</strong> — pode ser qualquer banco brasileiro</td>
+            </tr>
+            <tr>
+                <td><strong>Cadastro CNPJ</strong></td>
+                <td>Deve usar conta <strong>PJ</strong> (Pessoa Jurídica) do mesmo CNPJ</td>
+            </tr>
+            <tr>
+                <td><strong>Cadastro CPF (PF)</strong></td>
+                <td>Deve usar conta <strong>PF</strong> do mesmo CPF</td>
+            </tr>
+            <tr>
+                <td><strong>MEI</strong></td>
+                <td>Pode usar conta PF do proprietário (mas não pode antecipar vendas nessa conta)</td>
+            </tr>
+            <tr>
+                <td><strong>Get Conta</strong></td>
+                <td>Conta digital da própria Getnet — recebe as vendas <strong>sem custo adicional</strong>. Alternativa para quem não quer usar conta de outro banco</td>
+            </tr>
+            <tr>
+                <td><strong>Como alterar domicílio</strong></td>
+                <td>App Getnet Brasil → Serviços → Dados do Negócio → Dados Bancários. Ou pelo Portal Minha Conta → aba Financeiro → Dados Bancários</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="callout callout-success">
+        <span class="callout-title">✅ Resposta direta: O dinheiro vai direto para o Santander?</span>
+        <strong>Não obrigatoriamente.</strong> O dinheiro das vendas vai para o <strong>domicílio bancário</strong> que você cadastrar — pode ser <strong>qualquer banco</strong>. Se você tiver conta no Santander (PF ou PJ), pode usar essa conta e ter benefícios como <strong>Pix 0%</strong>. Mas não é obrigatório. Você também pode usar a <strong>Get Conta</strong> (conta digital da própria Getnet) para receber sem custo extra.
+    </div>
+
+    <h3>14.5 Bandeiras Aceitas</h3>
+    <table>
+        <thead><tr><th>Tipo</th><th>Bandeiras</th></tr></thead>
+        <tbody>
+            <tr>
+                <td>Cartões de Crédito/Débito</td>
+                <td>Visa, Mastercard, American Express, Elo, Hipercard, Diners Club</td>
+            </tr>
+            <tr>
+                <td>Vouchers (benefícios)</td>
+                <td>Alelo, Pluxee, Ticket, VR</td>
+            </tr>
+            <tr>
+                <td>Carteiras Digitais</td>
+                <td>Apple Pay, Samsung Pay, Google Pay</td>
+            </tr>
+            <tr>
+                <td>Pix</td>
+                <td>QR Code dinâmico, Pix por aproximação (NFC)</td>
+            </tr>
+            <tr>
+                <td>Cartão estrangeiro</td>
+                <td>Conversor de moedas (aceita cartões com moeda estrangeira)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>14.6 Custos para Integração de API (E-commerce)</h3>
+    <table>
+        <thead><tr><th>Item</th><th>Custo</th></tr></thead>
+        <tbody>
+            <tr><td>Taxa de adesão (API/e-commerce)</td><td><strong>Grátis</strong></td></tr>
+            <tr><td>Mensalidade da API</td><td><strong>Grátis</strong> (não há mensalidade para usar a API)</td></tr>
+            <tr><td>Acesso ao Sandbox</td><td><strong>Grátis</strong> (credenciais de teste)</td></tr>
+            <tr><td>Postman Collection</td><td><strong>Grátis</strong> (fornecido pela Getnet)</td></tr>
+            <tr><td>Homologação</td><td><strong>Grátis</strong> (suporte de integração)</td></tr>
+            <tr><td>Taxa por transação (e-commerce)</td><td>Taxa de desconto conforme contrato (mesma tabela acima)</td></tr>
+            <tr><td>Antifraude</td><td>Incluso na taxa de transação</td></tr>
+            <tr><td>3D Secure</td><td>Incluso (sem custo adicional)</td></tr>
+            <tr><td>Tokenização (Cofre)</td><td>Incluso</td></tr>
+            <tr><td>Webhooks</td><td><strong>Grátis</strong></td></tr>
+            <tr><td>Link de Pagamento</td><td>R$ 1,00 por link pago + taxa da bandeira</td></tr>
+        </tbody>
+    </table>
+
+    <div class="callout callout-info">
+        <span class="callout-title">📋 Resumo Financeiro</span>
+        Para integrar a API de pagamentos, <strong>não há custo de adesão nem mensalidade</strong>. O modelo de cobrança é <strong>por transação</strong> — você paga a taxa de desconto acordada no contrato a cada venda aprovada. Para Pix, a taxa pode ser 0% para correntistas Santander. Para cartão de crédito à vista, a taxa padrão é ~3,49%.
+    </div>
+
+    <h3>14.7 Comparação Rápida: Getnet vs. Outras Credenciadoras</h3>
+    <table>
+        <thead><tr><th>Característica</th><th>Getnet</th><th>Padrão de Mercado</th></tr></thead>
+        <tbody>
+            <tr><td>Taxa de adesão</td><td>Grátis</td><td>Varia (algumas cobram)</td></tr>
+            <tr><td>Mensalidade de API</td><td>Grátis</td><td>Algumas cobram mensalidade</td></tr>
+            <tr><td>Aluguel de maquininha</td><td>Grátis* (com meta de faturamento)</td><td>R$ 30–100/mês típico</td></tr>
+            <tr><td>Pix 0%</td><td>Sim (correntistas Santander)</td><td>Nem todas oferecem</td></tr>
+            <tr><td>Antecipação D+2</td><td>Sim</td><td>Padrão do mercado</td></tr>
+            <tr><td>Data Center próprio</td><td>TIER IV (único na LATAM)</td><td>A maioria usa terceiros</td></tr>
+            <tr><td>Grupo</td><td>Santander</td><td>—</td></tr>
+            <tr><td>Bandeiras</td><td>Visa, Master, Amex, Elo, Hiper</td><td>Padrão</td></tr>
+            <tr><td>3D Secure 2.0</td><td>Incluso</td><td>Algumas cobram à parte</td></tr>
+            <tr><td>Antifraude IA</td><td>Incluso</td><td>Algumas cobram à parte</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- 15. PRÓXIMOS PASSOS -->
 <section id="proximo-passos">
-    <h2>14. Próximos Passos</h2>
+    <h2>15. Próximos Passos</h2>
     <p>Para avançar com a POC, recomendamos a seguinte sequência:</p>
     <ol>
         <li><strong>Contato comercial</strong> — Iniciar processo de acreditação com a Getnet para obter credenciais de Sandbox</li>
